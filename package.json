@@ -1,0 +1,24 @@
+{
+  "name": "rapid-motion",
+  "main": "./lib/main",
+  "version": "0.0.0",
+  "description": "Rapid cursor positioning with fuzzy search",
+  "keywords": [],
+  "repository": "https://github.com/t9md/atom-rapid-motion",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "activationCommands": {
+    "atom-text-editor": [
+      "rapid-motion:forward",
+      "rapid-motion:backward",
+      "isearch:test"
+    ]
+  },
+  "dependencies": {
+    "atom-config-plus": "^0.1.2",
+    "fuzzaldrin": "^2.1.0",
+    "underscore-plus": "^1.6.6"
+  }
+}
