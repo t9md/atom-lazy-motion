@@ -29,7 +29,7 @@ class Match
 
   scroll: ->
     screenRange = @marker.getScreenRange()
-    @editor.scrollToScreenRange screenRange
+    @editor.scrollToScreenRange screenRange, center: true
     bufferRow = @marker.getStartBufferPosition().row
     # [TODO] restore fold after land() or cancel()
     if @editor.isFoldedAtBufferRow(bufferRow)
@@ -48,15 +48,9 @@ class Match
     {row, column} = @start
     row * 1000 + column
 
-  # To determine sorted order by _.sortedIndex which use binary search from sorted list.
-  # getScore: (point) ->
-  #   {row, column} = @start
-  #   score = row * 1000 + column
-  #   score = score * 10000 if @start.isLessThan(point)
-  #   score
-
   land: ->
     @editor.setCursorBufferPosition @start
 
   destroy: ->
     @marker?.destroy()
+    # hakone

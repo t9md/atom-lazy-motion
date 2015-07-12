@@ -1,36 +1,83 @@
-{CompositeDisposable, Range} = require 'atom'
+{CompositeDisposable, Range, TextEditor} = require 'atom'
 
 {filter} = require 'fuzzaldrin'
 _ = require 'underscore-plus'
-
 Match = null
+CandidateProvider = null
+
 Config =
   autoLand:
     order:   0
     type:    'boolean'
     default: false
     description: "automatically land(confirm) if only one match exists"
-  # visitOrder:
-  #   order: 1
-  #   type: 'string'
-  #   default: 'position'
-  #   enum: ['position', 'score']
-  #   description: "If you chose score, higher fuzzaldrin score comes first"
+  minimumInputLength:
+    order:   1
+    type:    'integer'
+    minimum: 0
+    default: 0
+    description: "Search start only when input length exceeds this value"
 
 module.exports =
   subscriptions: null
   config: Config
   candidates: null
+  wordPattern: /[@\w-.():]+/g
 
   activate: ->
     Match = require './match'
+    CandidateProvider = require './candidate-provider'
     @searchHistory = []
-    @subscriptions = new CompositeDisposable
-    @subscriptions.add atom.commands.add 'atom-text-editor',
+    @subscriptions = subs = new CompositeDisposable
+    subs.add atom.commands.add 'atom-text-editor',
       'rapid-motion:forward':  => @start 'forward'
       'rapid-motion:backward': => @start 'backward'
+      'rapid-motion:dump': => @dump()
+
+    @providerByEditor = new WeakMap
+    subs.add @observeTextEditors()
+
+    # @subscriptions.add @observeActivePaneItem()
+    # @editorSubscriptions = {}
+    #   atom.workspace.observeTextEditors (editor) =>
+    # @editorSubscriptions[editor.id] = new CompositeDisposable
+    # @editorSubscriptions[editor.id].add onDidStopChanging(editor)
+    # @editorSubscriptions[editor.id].add onDidDestroy(editor)
+    # onDidDestroy = (editor) =>
+    #   editor.onDidDestroy =>
+    #     @editorSubscriptions[editor.id]?.dispose()
+    #     delete @editorSubscriptions[editor.id]
+
+  observeTextEditors: ->
+    atom.workspace.observeTextEditors (editor) =>
+      return if editor.isMini() or @providerByEditor.get(editor)
+      candidateProvider = new CandidateProvider(editor, @wordPattern)
+      @providerByEditor.set(editor, candidateProvider)
+
+  # observeActivePaneItem: ->
+  #   editor = null
+  #   onDidSaved = =>
+  #     @buildCandidates()
+  #
+  #   # Borrow from auto-complet-plus code.
+  #   onWillChange = ({oldRange}) =>
+  #     range = [[oldRange.start.row, 0], [oldRange.end.row, Infinity]]
+  #     @removeCandidatesForRange range
+  #
+  #   onDidChange = ({newRange}) =>
+  #     range = [[newRange.start.row, 0], [newRange.end.row, Infinity]]
+  #     @addCandidatesForRange range
+    # atom.workspace.observeActivePaneItem (item) =>
+    #   return unless item instanceof TextEditor
+    #   buffer = item.getBuffer()
+    #   editor = item
+    #   @editorSubscriptions[item.id] = new CompositeDisposable
+    #   @editorSubscriptions[item.id].add buffer.onDidSave(onDidSave)
+    #   @editorSubscriptions[item.id].add buffer.onWillChange(onWillChange)
+    #   @editorSubscriptions[item.id].add buffer.onDidChange(onDiChange)
 
   deactivate: ->
+    @flashingTimeout = null
     @searchHistory = null
     @subscriptions.dispose()
     @cancel()
@@ -38,7 +85,9 @@ module.exports =
   start: (direction) ->
     ui = @getUI()
     unless ui.isVisible()
-      @init()
+      @matchForCursor = null
+      @editor = atom.workspace.getActiveTextEditor()
+      @saveEditorState()
       @reset()
       ui.setDirection direction
       ui.focus()
@@ -48,35 +97,30 @@ module.exports =
       @updateCurrent @matches[@updateIndex(direction)]
       ui.refresh()
 
-  # visit: (direction) ->
-
-  init: ->
-    @matchForCursor = null
-    @editor = atom.workspace.getActiveTextEditor()
-    @editorState = @getEditorState @editor
-
-  getCandidates: ->
-    pattern = /[\w-.]+/g
-    @scan(@editor, pattern)
-
-  scan: (editor, pattern) ->
-    matches = []
-    editor.scan pattern, ({range, matchText}) =>
-      matches.push new Match(editor, {range, matchText, class: 'rapid-motion-unmatch'})
-    matches
+  # debouncedBuildCandidates: ->
+  #   clearTimeout(@buildCandidatesTimeout)
+  #   @buildCandidatesTimeout = setTimeout =>
+  #     @buildCandidates()
+  #   , 300
 
   search: (direction, text) ->
     # [TODO] move to ovserveTextEditors
-    @candidates ?= @getCandidates()
+
+    @candidateProvider ?= @providerByEditor.get(@editor)
+    candidates = @candidateProvider.getCandidates()
+
+    # initial decoration to unmatch
     for match in @matches ? []
-      # initial decoration to unmatch
       match.decorate 'rapid-motion-unmatch'
 
     @matches = []
     return unless text
 
-    @matches = filter @candidates, text, key: 'matchText'
-    return unless @matches.length
+    @matches = filter candidates, text, key: 'matchText'
+    unless @matches.length
+      @restoreEditorState()
+      @debounceFlashScreen()
+      return
 
     if @matches.length is 1 and atom.config.get('rapid-motion.autoLand')
       @index = 0
@@ -131,7 +175,7 @@ module.exports =
     match
 
   cancel: ->
-    @setEditorState @editor, @editorState if @editorState?
+    @restoreEditorState()
     @editorState = null
     @matchForCursor?.destroy()
     @matchForCursor = null
@@ -147,9 +191,8 @@ module.exports =
   reset: ->
     @index = 0
     # _.defer =>
-    for match in @candidates ? []
-      match.destroy()
-    @candidates = null
+    @candidateProvider.resetCandidates() if @candidateProvider?
+    @candidateProvider = null
     @matches = []
 
   getUI: ->
@@ -161,15 +204,43 @@ module.exports =
   # Accessed from UI
   # -------------------------
   getCount: ->
-    if 0 < @index < @matches.length
+    if 0 <= @index < @matches.length
       { total: @matches.length, current: @index+1 }
     else
       { total: @matches.length, current: 0 }
 
   # Utility
   # -------------------------
-  getEditorState: (editor) ->
-    scrollTop: editor.getScrollTop()
+  debounceFlashScreen: ->
+    @_debounceFlashScreen ?= _.debounce =>
+      @flashScreen()
+    , 150, true
+    @_debounceFlashScreen()
 
-  setEditorState: (editor, {scrollTop}) ->
-    editor.setScrollTop scrollTop
+  flashScreen: ->
+    [startRow, endRow] = @editor.getVisibleRowRange()
+    range = new Range([startRow, 0], [endRow, Infinity])
+    marker = @editor.markBufferRange range,
+      invalidate: 'never'
+      persistent: false
+
+    @flashingDecoration?.getMarker().destroy()
+    clearTimeout @flashingTimeout
+
+    @flashingDecoration = @editor.decorateMarker marker,
+      type: 'highlight'
+      class: 'rapid-motion-flash'
+
+    @flashingTimeout = setTimeout =>
+      @flashingDecoration.getMarker().destroy()
+      @flashingDecoration = null
+    , 150
+
+  dump: ->
+    console.log @candidates?.map (m) -> m.matchText
+
+  saveEditorState: ->
+    @editorState = {scrollTop: @editor.getScrollTop()}
+
+  restoreEditorState: ->
+    @editor.setScrollTop @editorState.scrollTop if @editorState?

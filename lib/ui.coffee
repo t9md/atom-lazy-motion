@@ -38,7 +38,10 @@ class UI extends HTMLElement
     @subscriptions = subs = new CompositeDisposable
     subs.add @editor.onDidChange =>
       return if @isCleared()
-      @main.search @getDirection(), @editor.getText()
+      text = @editor.getText()
+      # console.log atom.config.get('rapid.minimumInputLength')
+      if text.length >= atom.config.get('rapid-motion.minimumInputLength')
+        @main.search @getDirection(), text
       @refresh()
 
     subs.add @editor.onDidDestroy =>
