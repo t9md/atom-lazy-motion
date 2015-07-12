@@ -17,67 +17,50 @@ Config =
     minimum: 0
     default: 0
     description: "Search start only when input length exceeds this value"
+  wordRegExp:
+    order:   2
+    type:    'string'
+    default: '[@\\w-.():]+'
+    description: "Used to build candidate List"
 
 module.exports =
   subscriptions: null
   config: Config
   candidates: null
-  wordPattern: /[@\w-.():]+/g
+
 
   activate: ->
     Match = require './match'
     CandidateProvider = require './candidate-provider'
-    @searchHistory = []
+    @providerByEditor = new Map
+
     @subscriptions = subs = new CompositeDisposable
-    subs.add atom.commands.add 'atom-text-editor',
+    @subscriptions.add atom.commands.add 'atom-text-editor',
       'rapid-motion:forward':  => @start 'forward'
       'rapid-motion:backward': => @start 'backward'
       'rapid-motion:dump': => @dump()
 
-    @providerByEditor = new WeakMap
-    subs.add @observeTextEditors()
+    # @subscriptions.add @observeTextEditors()
 
-    # @subscriptions.add @observeActivePaneItem()
-    # @editorSubscriptions = {}
-    #   atom.workspace.observeTextEditors (editor) =>
-    # @editorSubscriptions[editor.id] = new CompositeDisposable
-    # @editorSubscriptions[editor.id].add onDidStopChanging(editor)
-    # @editorSubscriptions[editor.id].add onDidDestroy(editor)
-    # onDidDestroy = (editor) =>
-    #   editor.onDidDestroy =>
-    #     @editorSubscriptions[editor.id]?.dispose()
-    #     delete @editorSubscriptions[editor.id]
+  getWordPattern: ->
+    pattern = atom.config.get('rapid-motion.wordRegExp')
+    new RegExp pattern, 'g'
 
+  # [FIXME]
   observeTextEditors: ->
     atom.workspace.observeTextEditors (editor) =>
       return if editor.isMini() or @providerByEditor.get(editor)
-      candidateProvider = new CandidateProvider(editor, @wordPattern)
+      candidateProvider = new CandidateProvider(editor, @getWordPattern())
       @providerByEditor.set(editor, candidateProvider)
-
-  # observeActivePaneItem: ->
-  #   editor = null
-  #   onDidSaved = =>
-  #     @buildCandidates()
-  #
-  #   # Borrow from auto-complet-plus code.
-  #   onWillChange = ({oldRange}) =>
-  #     range = [[oldRange.start.row, 0], [oldRange.end.row, Infinity]]
-  #     @removeCandidatesForRange range
-  #
-  #   onDidChange = ({newRange}) =>
-  #     range = [[newRange.start.row, 0], [newRange.end.row, Infinity]]
-  #     @addCandidatesForRange range
-    # atom.workspace.observeActivePaneItem (item) =>
-    #   return unless item instanceof TextEditor
-    #   buffer = item.getBuffer()
-    #   editor = item
-    #   @editorSubscriptions[item.id] = new CompositeDisposable
-    #   @editorSubscriptions[item.id].add buffer.onDidSave(onDidSave)
-    #   @editorSubscriptions[item.id].add buffer.onWillChange(onWillChange)
-    #   @editorSubscriptions[item.id].add buffer.onDidChange(onDiChange)
+      editor.onDidDestroy =>
+        candidateProvider.destroy()
+        @providerByEditor.delete(editor)
 
   deactivate: ->
     @flashingTimeout = null
+    @providerByEditor?.forEach (candidateProvider, editor) ->
+      candidateProvider.destroy()
+    @providerByEditor = null
     @searchHistory = null
     @subscriptions.dispose()
     @cancel()
@@ -97,22 +80,19 @@ module.exports =
       @updateCurrent @matches[@updateIndex(direction)]
       ui.refresh()
 
-  # debouncedBuildCandidates: ->
-  #   clearTimeout(@buildCandidatesTimeout)
-  #   @buildCandidatesTimeout = setTimeout =>
-  #     @buildCandidates()
-  #   , 300
+  decorateMatches: (matches, klass) ->
+    for m in matches ? []
+      m.decorate klass
+
+  getCandidates: ->
+    @candidateProvider ?= new CandidateProvider(@editor, @getWordPattern())
+    @candidateProvider.getCandidates()
 
   search: (direction, text) ->
-    # [TODO] move to ovserveTextEditors
-
-    @candidateProvider ?= @providerByEditor.get(@editor)
-    candidates = @candidateProvider.getCandidates()
+    candidates = @getCandidates()
 
     # initial decoration to unmatch
-    for match in @matches ? []
-      match.decorate 'rapid-motion-unmatch'
-
+    @decorateMatches @matches, 'rapid-motion-unmatch'
     @matches = []
     return unless text
 
@@ -127,16 +107,11 @@ module.exports =
       @getUI().confirm()
       return
 
-    for match in @matches
-      match.decorate 'rapid-motion-match'
-
     @matchForCursor ?= @getMatchForCursor()
+    @matches = _.sortBy @matches, (m) -> m.getScore()
+    @index = _.sortedIndex @matches, @matchForCursor, (m) -> m.getScore()
 
-    @matches = _.sortBy @matches, (match) ->
-      match.getScore()
-    @index = _.sortedIndex @matches, @matchForCursor, (match) ->
-      match.getScore()
-
+    @decorateMatches @matches, 'rapid-motion-match'
     # Decorate Top and Bottom match differently
     @matches[0].decorate 'rapid-motion-match top'
     if @matches.length > 1
@@ -144,8 +119,7 @@ module.exports =
 
     # @index can be 0 - N
     # Adjusting @index here to adapt to modification by @updateIndex().
-    if direction is 'forward'
-      @index -= 1
+    @index -= 1 if direction is 'forward'
     @updateCurrent @matches[@updateIndex(direction)]
 
   updateCurrent: (match) ->
@@ -190,9 +164,10 @@ module.exports =
 
   reset: ->
     @index = 0
-    # _.defer =>
-    @candidateProvider.resetCandidates() if @candidateProvider?
-    @candidateProvider = null
+    if @candidateProvider?
+      _.defer =>
+        @candidateProvider.resetCandidates()
+        @candidateProvider = null
     @matches = []
 
   getUI: ->
@@ -235,9 +210,6 @@ module.exports =
       @flashingDecoration.getMarker().destroy()
       @flashingDecoration = null
     , 150
-
-  dump: ->
-    console.log @candidates?.map (m) -> m.matchText
 
   saveEditorState: ->
     @editorState = {scrollTop: @editor.getScrollTop()}

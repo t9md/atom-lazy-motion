@@ -4,6 +4,9 @@ module.exports =
 class Match
   constructor: (@editor, {@range, @matchText}) ->
     {@start, @end} = @range
+    @marker = @editor.markBufferRange @range,
+      invalidate: 'never'
+      persistent: false
 
   isEqual: (other) ->
     @start.isEqual other.start
@@ -22,9 +25,6 @@ class Match
     @decoration.setProperties {type: 'highlight', class: klass}
 
   decorateMarker: (options) ->
-    @marker = @editor.markBufferRange @range,
-      invalidate: 'never'
-      persistent: false
     @editor.decorateMarker @marker, options
 
   scroll: ->
