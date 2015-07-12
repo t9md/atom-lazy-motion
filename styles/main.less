@@ -1,28 +1,33 @@
 @import "ui-variables";
 @import "syntax-variables";
 
-atom-text-editor::shadow {
-  .rapid-motion-match .region {
-    background-color: transparent;
-    border-radius: @component-border-radius;
-    border: 1px solid @syntax-result-marker-color;
+.rapid-motion {
+  &.round-box {
     box-sizing: border-box;
+    border-radius: @component-border-radius;
+  }
+}
+
+atom-text-editor::shadow {
+  .rapid-motion-unmatch .region {
+  }
+  .rapid-motion-match .region {
+    .rapid-motion.round-box;
+    background-color: transparent;
+    border: 1px solid @syntax-result-marker-color;
+  }
+  .rapid-motion-match.top .region {
+    border: 2px solid @syntax-color-renamed;
+  }
+  .rapid-motion-match.bottom .region {
+    border: 2px solid @syntax-color-removed;
   }
   .rapid-motion-match.current .region {
-    
     background-color: @background-color-selected;
-    border-radius: @component-border-radius;
-    border: 2px solid @syntax-result-marker-color;
-    // border: 2px solid red;
-    box-sizing: border-box;
-  }
-  .rapid-motion-unmatch .region {
-    // background-color: transparent;
-    // border-radius: @component-border-radius;
-    // border: 1px solid red;
-    // box-sizing: border-box;
+    border-width: 2px
   }
   .rapid-motion-flash .region {
+    .rapid-motion.round-box;
     background-color: @syntax-selection-flash-color;
   }
   .rapid-motion-cursor .region {

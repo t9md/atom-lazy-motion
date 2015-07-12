@@ -6,12 +6,39 @@ class Match
     {@start, @end} = @range
     # @decorateMarker klass
 
-  decorate: (klass) ->
+  isEqual: (other) ->
+    @start.isEqual other.start
+
+  decorate: (klass, action='replace') ->
     options = {type: 'highlight', class: klass}
-    if @decoration
-      @decoration.setProperties options
-    else
+    # action = 'replace'
+    unless @decoration?
       @decoration = @decorateMarker options
+      return
+
+    switch action
+      when 'replace'
+        @decoration.setProperties options
+      when 'remove'
+        console.log '### remove'
+        # [NOTE]
+        # properties have 'id' field and directry pass to setProperties
+        # cause error.
+        prop = @decoration.getProperties()
+        klass = prop['class'].replace(klass, '')
+        options['class'] = klass.trim()
+        @decoration.setProperties options
+
+        console.log 'remove:after'
+        console.log @decoration.getProperties()
+      when 'append'
+        console.log '### append'
+        prop = @decoration.getProperties()
+        options['class'] = prop['class'] + " #{klass}"
+        @decoration.setProperties options
+
+        console.log 'append:after'
+        console.log @decoration.getProperties()
 
   decorateMarker: (options) ->
     @marker = @editor.markBufferRange @range,

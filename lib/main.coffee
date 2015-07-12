@@ -80,9 +80,30 @@ module.exports =
     @index = _.sortedIndex @matches, @matchCursor, (match) ->
       match.getScore()
 
-    unless @isExceedingBoundry(direction)
-      @index -= 1 if direction is 'backward'
-      @updateCurrent @matches[@index]
+    @matches[0].decorate 'rapid-motion-match top'
+    if @matches.length > 1
+      @matches[@matches.length-1].decorate 'rapid-motion-match bottom'
+
+    # unless @isExceedingBoundry(direction)
+    # if @index is @matches.length
+    #   console.log "HOGE"
+    @index -= 1 if direction is 'backward'
+    console.log '-----report S----------'
+    console.log @matches
+    console.log @index
+    console.log @lastCurrent?.matchText
+    console.log '------------E---'
+    @fixIndexBoundry()
+    console.log @index
+    currentMatch = @matches[@index]
+    @lastCurrent = currentMatch
+    currentMatch.decorate 'rapid-motion-match current'
+    currentMatch.flash()
+    currentMatch.scroll()
+
+  fixIndexBoundry: ->
+    if @index is @matches.length
+      @index = @matches.length - 1
 
   isExceedingBoundry: (direction) ->
     switch direction
@@ -92,9 +113,17 @@ module.exports =
         @index is 0
 
   updateCurrent: (match) ->
-    @lastCurrent?.decorate 'rapid-motion-match'
-    match.decorate 'rapid-motion-match current'
-    # unless @lastCurrent?.start.isEqual(match.start)
+    # console.log "called"
+    unless @lastCurrent.isEqual(match)
+      @lastCurrent?.decorate('current', 'remove')
+      match.decorate 'current', 'append'
+    # if @lastCurrent?
+    # else
+    #   match.decorate 'rapid-motion-match-current', 'append'
+    # @lastCurrent?.decorate('rapid-motion-match-current', 'remove')
+    # console.log "lastCurrent: #{@lastCurrent?.matchText}"
+    # unless @lastCurrent?.isEqual(match)
+    #   match.decorate 'rapid-motion-match-current', 'append'
     match.flash()
     match.scroll()
     @lastCurrent = match
