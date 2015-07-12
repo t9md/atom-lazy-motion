@@ -27,38 +27,29 @@ module.exports =
   subscriptions: null
   config: Config
   candidates: null
+  regExpDefault: '[@\\w-.():]+'
 
   activate: ->
     Match = require './match'
     CandidateProvider = require './candidate-provider'
-    @providerByEditor = new Map
 
     @subscriptions = subs = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
       'rapid-motion:forward':  => @start 'forward'
       'rapid-motion:backward': => @start 'backward'
       'rapid-motion:dump': => @dump()
-    # @subscriptions.add @observeTextEditors()
 
   getWordPattern: ->
-    pattern = atom.config.get('rapid-motion.wordRegExp')
-    new RegExp pattern, 'g'
-
-  # [FIXME]
-  observeTextEditors: ->
-    atom.workspace.observeTextEditors (editor) =>
-      return if editor.isMini() or @providerByEditor.get(editor)
-      candidateProvider = new CandidateProvider(editor, @getWordPattern())
-      @providerByEditor.set(editor, candidateProvider)
-      editor.onDidDestroy =>
-        candidateProvider.destroy()
-        @providerByEditor.delete(editor)
+    pattern  = atom.config.get('rapid-motion.wordRegExp')
+    try
+      new RegExp(pattern, 'g')
+    catch e
+      # Auto FIX to default if invalid RegExp.
+      atom.config.set('rapid-motion.wordRegExp', @regExpDefault)
+      @getWordPattern()
 
   deactivate: ->
     @flashingTimeout = null
-    @providerByEditor?.forEach (candidateProvider, editor) ->
-      candidateProvider.destroy()
-    @providerByEditor = null
     @searchHistory = null
     @subscriptions.dispose()
     @cancel()
@@ -88,7 +79,6 @@ module.exports =
 
   search: (direction, text) ->
     candidates = @getCandidates()
-
     # initial decoration to unmatch
     @decorateMatches @matches, 'rapid-motion-unmatch'
     @matches = []
@@ -130,12 +120,10 @@ module.exports =
   updateIndex: (direction) ->
     if direction is 'forward'
       @index += 1
-      if @index is @matches.length
-        @index = 0
+      @index = 0 if @index is @matches.length
     else if direction is 'backward'
       @index -= 1
-      if @index is -1
-        @index = @matches.length - 1
+      @index = (@matches.length - 1) if @index is -1
     @index
 
   getMatchForCursor: ->
@@ -165,7 +153,6 @@ module.exports =
     if @candidateProvider?
       _.defer =>
         @candidateProvider.destroy()
-        # @candidateProvider.resetCandidates()
         @candidateProvider = null
     @matches = []
 

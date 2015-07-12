@@ -39,7 +39,6 @@ class UI extends HTMLElement
     subs.add @editor.onDidChange =>
       return if @isCleared()
       text = @editor.getText()
-      # console.log atom.config.get('rapid.minimumInputLength')
       if text.length >= atom.config.get('rapid-motion.minimumInputLength')
         @main.search @getDirection(), text
       @refresh()
