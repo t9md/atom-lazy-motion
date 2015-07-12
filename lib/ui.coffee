@@ -56,8 +56,15 @@ class UI extends HTMLElement
     content += ", Current: #{current}" if total isnt 0
     @matchCountContainer.textContent = content
 
-  isCleared: ->
-    @cleared
+  confirm: ->
+    unless @editor.getText()
+      return
+    @main.land()
+    @clear()
+
+  cancel: ->
+    @main.cancel()
+    @clear()
 
   clear: ->
     return if @isCleared()
@@ -66,16 +73,8 @@ class UI extends HTMLElement
     @panel.hide()
     atom.workspace.getActivePane().activate()
 
-  confirm: ->
-    unless @editor.getText()
-      return
-    @main.land @getDirection()
-    @main.saveHistory @editor.getText()
-    @clear()
-
-  cancel: ->
-    @main.cancel()
-    @clear()
+  isCleared: ->
+    @cleared
 
   destroy: ->
     @panel.destroy()

@@ -2,9 +2,9 @@ _ = require 'underscore-plus'
 
 module.exports =
 class Match
-  constructor: (@editor, {@range, @matchText, class: klass}) ->
+  constructor: (@editor, {@range, @matchText}) ->
     {@start, @end} = @range
-    @decorateMarker klass
+    # @decorateMarker klass
 
   decorate: (klass) ->
     options = {type: 'highlight', class: klass}
@@ -47,14 +47,8 @@ class Match
   #   score = score * 10000 if @start.isLessThan(point)
   #   score
 
-  land: (direction) ->
-    point = @start
-    if (@editor.getLastSelection().isEmpty())
-      @editor.setCursorBufferPosition point
-    else
-      # [FIXME] Is it reasonable, need carefully think about?
-      point = @end if direction is 'forward'
-      @editor.selectToBufferPosition point
+  land: ->
+    @editor.setCursorBufferPosition @start
 
   destroy: ->
     @marker?.destroy()

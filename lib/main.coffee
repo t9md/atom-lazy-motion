@@ -8,7 +8,7 @@ Match = null
 module.exports =
   subscriptions: null
   config: settings.config
-  searchHistory: null
+  candidates: null
 
   activate: ->
     Match = require './match'
@@ -23,7 +23,7 @@ module.exports =
     @subscriptions.dispose()
     @cancel()
 
-  start: (direction, @mode='search') ->
+  start: (direction) ->
     ui = @getUI()
     unless ui.isVisible()
       @init()
@@ -37,18 +37,17 @@ module.exports =
         # Adjusting index make first entry(index=0) current.
         if direction is 'forward' and not @lastCurrent
           @index -= 1
-          @updateCurrent @matches[@updateIndex(direction)]
-          ui.refresh()
-      # @scroll()
+      @updateCurrent @matches[@updateIndex(direction)]
+      ui.refresh()
 
   init: ->
     @matchCursor = null
-    if @candidates
-      # [TODO] remove this after word tokenization moved to observeTextEditors()
-      # Last time's defered destroy() might not finished.
-      for match in @candidates
-        match.destroy()
-    @candidates = []
+    # if @candidates
+    #   # [TODO] remove this after word tokenization moved to observeTextEditors()
+    #   # Last time's defered destroy() might not finished.
+    #   for match in @candidates
+    #     match.destroy()
+    # @candidates = []
     @editor = atom.workspace.getActiveTextEditor()
     @editorState = @getEditorState @editor
 
@@ -64,12 +63,9 @@ module.exports =
 
   search: (direction, text) ->
     # [TODO] move to ovserveTextEditors
-    unless @candidates.length
-      @candidates = @getCandidates()
-    else
-      # clear
-      for match in @candidates
-        match.decorate 'rapid-motion-unmatch'
+    @candidates ?= @getCandidates()
+    for match in @matches ? []
+      match.decorate 'rapid-motion-unmatch'
     return unless text
 
     @matches = filter @candidates, text, key: 'matchText'
@@ -77,13 +73,17 @@ module.exports =
 
     for match in @matches
       match.decorate 'rapid-motion-found'
+
     @matchCursor ?= @getMatchCursor()
     @matches = _.sortBy @matches, (match) ->
       match.getScore()
     @index = _.sortedIndex @matches, @matchCursor, (match) ->
       match.getScore()
 
-    unless @isExceedingBoundry(direction)
+    if @isExceedingBoundry(direction)
+      console.log "Exceeding"
+    else
+      console.log "not Exceeding"
       @index -= 1 if direction is 'backward'
       @scrollToMatch @matches[@index]
 
@@ -111,7 +111,8 @@ module.exports =
     start = @editor.getCursorBufferPosition()
     end = start.translate([0, 1])
     range = new Range(start, end)
-    match = new Match(@editor, {range, class: 'rapid-motion-cursor'})
+    match = new Match(@editor, {range})
+    match.decorate 'rapid-motion-cursor'
     match
 
   cancel: ->
@@ -122,22 +123,18 @@ module.exports =
     @lastCurrent = null
     @reset()
 
-  land: (direction) ->
-    @matches?[@index]?.land direction
+  land: ->
+    @matches?[@index]?.land()
     @matchCursor?.destroy()
     @matchCursor = null
     @reset()
 
   reset: ->
     @index = 0
-    if @candidates
-      _.defer =>
-        for match in @candidates
-          match.destroy()
-        @candidates = null
-    else
-      for match in @matches ? []
-        match.destroy()
+    # _.defer =>
+    for match in @candidates ? []
+      match.destroy()
+    @candidates = null
     @matches = []
 
   updateIndex: (direction) ->
@@ -153,6 +150,7 @@ module.exports =
       ui = new (require './ui')
       ui.initialize this
       ui)
+
   # Accessed from UI
   # -------------------------
   getCount: ->
