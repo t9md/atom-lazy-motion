@@ -28,7 +28,6 @@ module.exports =
   config: Config
   candidates: null
 
-
   activate: ->
     Match = require './match'
     CandidateProvider = require './candidate-provider'
@@ -166,7 +165,8 @@ module.exports =
     @index = 0
     if @candidateProvider?
       _.defer =>
-        @candidateProvider.resetCandidates()
+        @candidateProvider.destroy()
+        # @candidateProvider.resetCandidates()
         @candidateProvider = null
     @matches = []
 
