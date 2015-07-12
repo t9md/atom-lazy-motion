@@ -32,6 +32,7 @@ class UI extends HTMLElement
     @cleared = false
     @panel.show()
     @editorView.focus()
+    @refresh()
 
   handleInput: ->
     @subscriptions = subs = new CompositeDisposable

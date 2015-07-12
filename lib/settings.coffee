@@ -1,12 +1,8 @@
 ConfigPlus = require 'atom-config-plus'
 
 module.exports = new ConfigPlus 'rapid-motion',
-  useWildChar:
+  autoLand:
     order:   0
     type:    'boolean'
-    default: true
-  wildChar:
-    order:   1
-    type:    'string'
-    default: ''
-    description: "Use this char as wild card char"
+    default: false
+    description: "automatically land(confirm) if only one match exists"

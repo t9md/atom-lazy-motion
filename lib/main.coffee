@@ -1,13 +1,20 @@
 {CompositeDisposable, Range, Point} = require 'atom'
 _ = require 'underscore-plus'
 {filter} = require 'fuzzaldrin'
-settings = require './settings'
+# settings = require './settings'
+
+Config =
+  autoLand:
+    order:   0
+    type:    'boolean'
+    default: false
+    description: "automatically land(confirm) if only one match exists"
 
 Match = null
 
 module.exports =
   subscriptions: null
-  config: settings.config
+  config: Config
   candidates: null
 
   activate: ->
@@ -27,27 +34,17 @@ module.exports =
     ui = @getUI()
     unless ui.isVisible()
       @init()
+      @reset()
       ui.setDirection direction
       ui.focus()
     else
       ui.setDirection direction
       return unless @matches.length
-      unless (@lastDirection is direction and not @lastCurrent)
-        # This mean last search was 'backward' and not found for backward direction.
-        # Adjusting index make first entry(index=0) current.
-        if direction is 'forward' and not @lastCurrent
-          @index -= 1
       @updateCurrent @matches[@updateIndex(direction)]
       ui.refresh()
 
   init: ->
     @matchCursor = null
-    # if @candidates
-    #   # [TODO] remove this after word tokenization moved to observeTextEditors()
-    #   # Last time's defered destroy() might not finished.
-    #   for match in @candidates
-    #     match.destroy()
-    # @candidates = []
     @editor = atom.workspace.getActiveTextEditor()
     @editorState = @getEditorState @editor
 
@@ -65,70 +62,58 @@ module.exports =
     # [TODO] move to ovserveTextEditors
     @candidates ?= @getCandidates()
     for match in @matches ? []
+      # initial decoration to unmatch
       match.decorate 'rapid-motion-unmatch'
+
+    @matches = []
     return unless text
 
     @matches = filter @candidates, text, key: 'matchText'
     return unless @matches.length
 
+    if @matches.length is 1 and atom.config.get('rapid-motion.autoLand')
+      @index = 0
+      @getUI().confirm()
+      return
+
     for match in @matches
       match.decorate 'rapid-motion-match'
 
-    @matchCursor ?= @getMatchCursor()
+    @matchCursor ?= @getMatchForCursor()
     @matches = _.sortBy @matches, (match) ->
       match.getScore()
     @index = _.sortedIndex @matches, @matchCursor, (match) ->
-      match.getScore()
 
+    # Decorate Top and Bottom match differently
     @matches[0].decorate 'rapid-motion-match top'
     if @matches.length > 1
       @matches[@matches.length-1].decorate 'rapid-motion-match bottom'
 
-    # unless @isExceedingBoundry(direction)
-    # if @index is @matches.length
-    #   console.log "HOGE"
-    @index -= 1 if direction is 'backward'
-    console.log '-----report S----------'
-    console.log @matches
-    console.log @index
-    console.log @lastCurrent?.matchText
-    console.log '------------E---'
-    @fixIndexBoundry()
-    console.log @index
-    currentMatch = @matches[@index]
-    @lastCurrent = currentMatch
-    currentMatch.decorate 'rapid-motion-match current'
-    currentMatch.flash()
-    currentMatch.scroll()
-
-  fixIndexBoundry: ->
-    if @index is @matches.length
-      @index = @matches.length - 1
-
-  isExceedingBoundry: (direction) ->
-    switch direction
-      when 'forward'
-        @index is @matches.length
-      when 'backward'
-        @index is 0
+    # @index can be 0 - N
+    # Adjusting @index here to adapt to modification by @updateIndex().
+    if direction is 'forward'
+      @index -= 1
+    @updateCurrent @matches[@updateIndex(direction)]
 
   updateCurrent: (match) ->
-    # console.log "called"
-    unless @lastCurrent.isEqual(match)
-      @lastCurrent?.decorate('current', 'remove')
-      match.decorate 'current', 'append'
-    # if @lastCurrent?
-    # else
-    #   match.decorate 'rapid-motion-match-current', 'append'
-    # @lastCurrent?.decorate('rapid-motion-match-current', 'remove')
-    # console.log "lastCurrent: #{@lastCurrent?.matchText}"
-    # unless @lastCurrent?.isEqual(match)
-    #   match.decorate 'rapid-motion-match-current', 'append'
+    @lastCurrent?.decorate 'current', 'remove'
+    match.decorate 'current', 'append'
     match.flash()
     match.scroll()
     @lastCurrent = match
 
-  getMatchCursor: ->
+  updateIndex: (direction) ->
+    if direction is 'forward'
+      @index += 1
+      if @index is @matches.length
+        @index = 0
+    else if direction is 'backward'
+      @index -= 1
+      if @index is -1
+        @index = @matches.length - 1
+    @index
+
+  getMatchForCursor: ->
     start = @editor.getCursorBufferPosition()
     end = start.translate([0, 1])
     range = new Range(start, end)
@@ -158,14 +143,6 @@ module.exports =
     @candidates = null
     @matches = []
 
-  updateIndex: (direction) ->
-    @index =
-      if direction is 'forward'
-        Math.min(@matches.length-1, @index+1)
-      else
-        Math.max(0, @index-1)
-    @index
-
   getUI: ->
     @ui ?= (
       ui = new (require './ui')
@@ -179,7 +156,6 @@ module.exports =
       { total: @matches.length, current: @index+1 }
     else
       { total: @matches.length, current: 0 }
-
 
   # Utility
   # -------------------------
