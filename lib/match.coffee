@@ -30,7 +30,7 @@ class Match
   flash: ->
     decoration = @editor.decorateMarker @marker.copy(),
       type: 'highlight'
-      class: 'isearch-flash'
+      class: 'rapid-motion-flash'
 
     setTimeout  ->
       decoration.getMarker().destroy()

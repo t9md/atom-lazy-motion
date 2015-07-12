@@ -2,13 +2,14 @@
 @import "syntax-variables";
 
 atom-text-editor::shadow {
-  .rapid-motion-found .region {
+  .rapid-motion-match .region {
     background-color: transparent;
     border-radius: @component-border-radius;
     border: 1px solid @syntax-result-marker-color;
     box-sizing: border-box;
   }
-  .rapid-motion-found.current .region {
+  .rapid-motion-match.current .region {
+    
     background-color: @background-color-selected;
     border-radius: @component-border-radius;
     border: 2px solid @syntax-result-marker-color;

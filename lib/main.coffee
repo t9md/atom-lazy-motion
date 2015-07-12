@@ -72,7 +72,7 @@ module.exports =
     return unless @matches.length
 
     for match in @matches
-      match.decorate 'rapid-motion-found'
+      match.decorate 'rapid-motion-match'
 
     @matchCursor ?= @getMatchCursor()
     @matches = _.sortBy @matches, (match) ->
@@ -80,12 +80,9 @@ module.exports =
     @index = _.sortedIndex @matches, @matchCursor, (match) ->
       match.getScore()
 
-    if @isExceedingBoundry(direction)
-      console.log "Exceeding"
-    else
-      console.log "not Exceeding"
+    unless @isExceedingBoundry(direction)
       @index -= 1 if direction is 'backward'
-      @scrollToMatch @matches[@index]
+      @updateCurrent @matches[@index]
 
   isExceedingBoundry: (direction) ->
     switch direction
@@ -95,17 +92,12 @@ module.exports =
         @index is 0
 
   updateCurrent: (match) ->
-    @lastCurrent?.decorate 'rapid-motion-found'
-    match.decorate 'rapid-motion-found current'
-    unless @lastCurrent?.start.isEqual(match.start)
-      match.flash()
-    match.scroll()
-    @lastCurrent = match
-
-  scrollToMatch: (match) ->
-    match.decorate 'rapid-motion-found current'
+    @lastCurrent?.decorate 'rapid-motion-match'
+    match.decorate 'rapid-motion-match current'
+    # unless @lastCurrent?.start.isEqual(match.start)
     match.flash()
     match.scroll()
+    @lastCurrent = match
 
   getMatchCursor: ->
     start = @editor.getCursorBufferPosition()
