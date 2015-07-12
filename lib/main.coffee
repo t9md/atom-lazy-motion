@@ -1,16 +1,21 @@
-{CompositeDisposable, Range, Point} = require 'atom'
-_ = require 'underscore-plus'
-{filter} = require 'fuzzaldrin'
-# settings = require './settings'
+{CompositeDisposable, Range} = require 'atom'
 
+{filter} = require 'fuzzaldrin'
+_ = require 'underscore-plus'
+
+Match = null
 Config =
   autoLand:
     order:   0
     type:    'boolean'
     default: false
     description: "automatically land(confirm) if only one match exists"
-
-Match = null
+  # visitOrder:
+  #   order: 1
+  #   type: 'string'
+  #   default: 'position'
+  #   enum: ['position', 'score']
+  #   description: "If you chose score, higher fuzzaldrin score comes first"
 
 module.exports =
   subscriptions: null
@@ -43,8 +48,10 @@ module.exports =
       @updateCurrent @matches[@updateIndex(direction)]
       ui.refresh()
 
+  # visit: (direction) ->
+
   init: ->
-    @matchCursor = null
+    @matchForCursor = null
     @editor = atom.workspace.getActiveTextEditor()
     @editorState = @getEditorState @editor
 
@@ -79,10 +86,12 @@ module.exports =
     for match in @matches
       match.decorate 'rapid-motion-match'
 
-    @matchCursor ?= @getMatchForCursor()
+    @matchForCursor ?= @getMatchForCursor()
+
     @matches = _.sortBy @matches, (match) ->
       match.getScore()
-    @index = _.sortedIndex @matches, @matchCursor, (match) ->
+    @index = _.sortedIndex @matches, @matchForCursor, (match) ->
+      match.getScore()
 
     # Decorate Top and Bottom match differently
     @matches[0].decorate 'rapid-motion-match top'
@@ -124,15 +133,15 @@ module.exports =
   cancel: ->
     @setEditorState @editor, @editorState if @editorState?
     @editorState = null
-    @matchCursor?.destroy()
-    @matchCursor = null
+    @matchForCursor?.destroy()
+    @matchForCursor = null
     @lastCurrent = null
     @reset()
 
   land: ->
     @matches?[@index]?.land()
-    @matchCursor?.destroy()
-    @matchCursor = null
+    @matchForCursor?.destroy()
+    @matchForCursor = null
     @reset()
 
   reset: ->

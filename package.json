@@ -12,12 +12,10 @@
   "activationCommands": {
     "atom-text-editor": [
       "rapid-motion:forward",
-      "rapid-motion:backward",
-      "isearch:test"
+      "rapid-motion:backward"
     ]
   },
   "dependencies": {
-    "atom-config-plus": "^0.1.2",
     "fuzzaldrin": "^2.1.0",
     "underscore-plus": "^1.6.6"
   }
