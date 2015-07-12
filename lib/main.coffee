@@ -38,7 +38,6 @@ module.exports =
       'rapid-motion:forward':  => @start 'forward'
       'rapid-motion:backward': => @start 'backward'
       'rapid-motion:dump': => @dump()
-
     # @subscriptions.add @observeTextEditors()
 
   getWordPattern: ->
