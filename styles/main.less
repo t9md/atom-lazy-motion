@@ -10,6 +10,7 @@
 
 atom-text-editor::shadow {
   .rapid-motion-unmatch .region {
+    display: none;
     // .rapid-motion.round-box;
     // background-color: transparent;
     // border: 1px solid @syntax-result-marker-color;
@@ -17,7 +18,7 @@ atom-text-editor::shadow {
   .rapid-motion-match .region {
     .rapid-motion.round-box;
     background-color: transparent;
-    border: 1px solid @syntax-result-marker-color;
+    border: 2px solid @syntax-result-marker-color;
   }
   .rapid-motion-match.top .region {
     border: 2px solid @syntax-color-renamed;
@@ -26,14 +27,25 @@ atom-text-editor::shadow {
     border: 2px solid @syntax-color-removed;
   }
   .rapid-motion-match.current .region {
-    background-color: @background-color-selected;
-    border-width: 2px
+    background-color: @syntax-selection-color;
+    // border-width: 3px
   }
   .rapid-motion-flash .region {
     .rapid-motion.round-box;
     background-color: @syntax-selection-flash-color;
   }
   .rapid-motion-cursor .region {
-    background-color: @background-color-info;
+    background-color: @syntax-cursor-color;
+  }
+}
+
+.rapid-motion-ui {
+  .editor-container {
+    padding: @component-padding;
+  }
+  .counter {
+    padding: @component-padding/2 @component-padding;
+    font-size: 1.3em;
+    color: @text-color;
   }
 }

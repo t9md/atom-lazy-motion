@@ -1,15 +1,16 @@
-_ = require 'underscore-plus'
-
 module.exports =
 class Match
   constructor: (@editor, {@range, @matchText}) ->
     {@start, @end} = @range
-    @marker = @editor.markBufferRange @range,
-      invalidate: 'never'
-      persistent: false
 
   isEqual: (other) ->
     @start.isEqual other.start
+
+  isTop: ->
+    @decoration.getProperties()['class'].match 'top'
+
+  isBottom: ->
+    @decoration.getProperties()['class'].match 'bottom'
 
   decorate: (klass, action='replace') ->
     unless @decoration?
@@ -25,6 +26,10 @@ class Match
     @decoration.setProperties {type: 'highlight', class: klass}
 
   decorateMarker: (options) ->
+    @marker = @editor.markBufferRange @range,
+      invalidate: 'never'
+      persistent: false
+
     @editor.decorateMarker @marker, options
 
   scroll: ->

@@ -4,6 +4,8 @@
 _ = require 'underscore-plus'
 Match = null
 CandidateProvider = null
+Container = null
+Hover = null
 
 Config =
   autoLand:
@@ -22,15 +24,19 @@ Config =
     type:    'string'
     default: '[@\\w-.():]+'
     description: "Used to build candidate List"
+  showHoverIndicator:
+    order:   3
+    type:    'boolean'
+    default: false
 
 module.exports =
   subscriptions: null
   config: Config
-  candidates: null
-  regExpDefault: '[@\\w-.():]+'
+  container: null
 
   activate: ->
     Match = require './match'
+    {Container, Hover} = require './hover-indicator'
     CandidateProvider = require './candidate-provider'
 
     @subscriptions = subs = new CompositeDisposable
@@ -45,10 +51,11 @@ module.exports =
       new RegExp(pattern, 'g')
     catch e
       # Auto FIX to default if invalid RegExp.
-      atom.config.set('rapid-motion.wordRegExp', @regExpDefault)
+      atom.config.set('rapid-motion.wordRegExp', Config.wordRegExp.default)
       @getWordPattern()
 
   deactivate: ->
+    @container = null
     @flashingTimeout = null
     @searchHistory = null
     @subscriptions.dispose()
@@ -60,7 +67,8 @@ module.exports =
       @matchForCursor = null
       @editor = atom.workspace.getActiveTextEditor()
       @saveEditorState()
-      @reset()
+      @index = 0
+      @matches = []
       ui.setDirection direction
       ui.focus()
     else
@@ -115,7 +123,17 @@ module.exports =
     match.decorate 'current', 'append'
     match.flash()
     match.scroll()
+    @showHover match if atom.config.get('rapid-motion.showHoverIndicator')
     @lastCurrent = match
+
+  showHover: (match) ->
+    @container = new Container()
+    @container.initialize @editor
+    @hover?.destroy()
+    @hover = new Hover()
+    @hover.initialize {@editor, match}
+    @container.appendChild @hover
+    @hover.setContent @getCount()
 
   updateIndex: (direction) ->
     if direction is 'forward'
@@ -152,9 +170,12 @@ module.exports =
     @index = 0
     if @candidateProvider?
       _.defer =>
-        @candidateProvider.destroy()
+        @candidateProvider?.destroy()
         @candidateProvider = null
     @matches = []
+    @container?.destroy()
+    @hover?.destroy()
+
 
   getUI: ->
     @ui ?= (

@@ -18,7 +18,7 @@ class CandidateProvider
   buildCandidates: ->
     matches = []
     @editor.scan @wordPattern, ({range, matchText}) =>
-      matches.push new Match(@editor, {range, matchText, class: 'rapid-motion-unmatch'})
+      matches.push new Match(@editor, {range, matchText})
     matches
 
   destroy: ->
