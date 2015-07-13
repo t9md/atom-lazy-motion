@@ -27,7 +27,7 @@ Config =
   showHoverIndicator:
     order:   3
     type:    'boolean'
-    default: false
+    default: true
 
 module.exports =
   subscriptions: null
