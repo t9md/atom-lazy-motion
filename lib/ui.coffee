@@ -2,53 +2,74 @@
 
 class UI extends HTMLElement
   createdCallback: ->
-    @hiddenPanels = []
     @classList.add 'lazy-motion-ui'
-    @container = document.createElement 'div'
-    @matchCountContainer = document.createElement 'div'
-    @matchCountContainer.classList.add 'counter'
-    @container.className = 'editor-container'
-    @appendChild @matchCountContainer
-    @appendChild @container
 
-  initialize: (@main) ->
-    @editorView = document.createElement 'atom-text-editor'
-    @editorView.classList.add 'editor', 'lazy-motion'
-    @editorView.getModel().setMini true
-    @editorView.setAttribute 'mini', ''
-    @container.appendChild @editorView
-    @editor = @editorView.getModel()
+    @editorContainer = document.createElement 'div'
+    @editorContainer.className = 'editor-container'
+    @counterContainer = document.createElement 'div'
+    @counterContainer.className = 'counter'
+
+    @appendChild @counterContainer
+    @appendChild @editorContainer
+
+    @editorElement = document.createElement 'atom-text-editor'
+    @editorElement.classList.add 'editor', 'lazy-motion'
+    @editorElement.getModel().setMini true
+    @editorElement.setAttribute 'mini', ''
+    @editorContainer.appendChild @editorElement
+    @editor = @editorElement.getModel()
     @panel = atom.workspace.addBottomPanel item: this, visible: false
 
+  initialize: (@main) ->
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
-      'core:confirm':        => @confirm()
-      'lazy-motion:cancel': => @cancel()
-      'core:cancel':         => @cancel()
-      'click':               => @cancel()
-      'blur':                => @cancel()
-
+      'core:confirm':       => @confirm()
+      'core:cancel':        => @cancel()
+      'click':              => @cancel()
+      'blur':               => @cancel()
     @handleInput()
     this
 
-  focus: ->
-    @confirmed = false
-    @cleared = false
-    @panel.show()
-    @editorView.focus()
-    @refresh()
-
   handleInput: ->
     @subscriptions = subs = new CompositeDisposable
+
     subs.add @editor.onDidChange =>
-      return if @isCleared()
       text = @editor.getText()
       if text.length >= atom.config.get('lazy-motion.minimumInputLength')
         @main.search @getDirection(), text
-      @refresh()
+      @showCounter()
 
     subs.add @editor.onDidDestroy =>
       subs.dispose()
+
+  showCounter: ->
+    {total, current} = @main.getCount()
+    content = if total isnt 0 then "#{current} / #{total}" else "0"
+    @counterContainer.textContent = "Lazy Motion: #{content}"
+
+  focus: ->
+    @editor.setText ''
+    @finished = false
+    @panel.show()
+    @editorElement.focus()
+    @showCounter()
+
+  confirm: ->
+    return unless @editor.getText()
+    @finished = true
+    @main.land()
+
+    @panel.hide()
+    atom.workspace.getActivePane().activate()
+
+  cancel: ->
+    # [NOTE] blur event happen on confirmed() in this case we shouldn't cancel
+    return if @finished
+    @finished = true
+    @main.cancel()
+
+    @panel.hide()
+    atom.workspace.getActivePane().activate()
 
   setDirection: (@direction) ->
   getDirection: ->
@@ -57,36 +78,9 @@ class UI extends HTMLElement
   isVisible: ->
     @panel.isVisible()
 
-  refresh: ->
-    {total, current} = @main.getCount()
-    content = if total isnt 0 then "#{current} / #{total}" else "0"
-    @matchCountContainer.textContent = "Lazy Motion: #{content}"
-
-  confirm: ->
-    @confirmed = true
-    unless @editor.getText()
-      return
-    @main.land()
-    @clear()
-
-  cancel: ->
-    # [NOTE] blur event happen on confirmed() in this case we shouldn't cancel
-    return if @confirmed
-    @main.cancel()
-    @clear()
-
-  clear: ->
-    return if @isCleared()
-    @cleared = true
-    @editor.setText ''
-    @panel.hide()
-    atom.workspace.getActivePane().activate()
-
-  isCleared: ->
-    @cleared
-
   destroy: ->
     @panel.destroy()
+    @editor.destroy()
     @subscriptions.dispose()
     @remove()
 

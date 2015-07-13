@@ -2,6 +2,7 @@
 
 {filter} = require 'fuzzaldrin'
 _ = require 'underscore-plus'
+
 Match = null
 CandidateProvider = null
 Container = null
@@ -62,6 +63,7 @@ module.exports =
 
 
   deactivate: ->
+    @ui?.destroy()
     @container = null
     @flashingTimeout = null
     @searchHistory = null
@@ -82,7 +84,7 @@ module.exports =
       ui.setDirection direction
       return unless @matches.length
       @updateCurrent @matches[@updateIndex(direction)]
-      ui.refresh()
+      ui.showCounter()
 
   decorateMatches: (matches, klass) ->
     for m in matches ? []

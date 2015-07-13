@@ -1,5 +1,3 @@
-{CompositeDisposable, Range} = require 'atom'
-_ = require 'underscore-plus'
 Match = require './match'
 
 module.exports =
@@ -12,9 +10,6 @@ class CandidateProvider
   getCandidates: ->
     @candidates
 
-  dump: ->
-    console.log @candidates.map (c) -> c.matchText
-
   buildCandidates: ->
     matches = []
     @editor.scan @wordPattern, ({range, matchText}) =>
@@ -25,3 +20,5 @@ class CandidateProvider
     for match in @candidates
       match.destroy()
     @candidates = null
+    @editor = null
+    @wordPattern = null
