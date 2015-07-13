@@ -60,7 +60,7 @@ class UI extends HTMLElement
   refresh: ->
     {total, current} = @main.getCount()
     content = if total isnt 0 then "#{current} / #{total}" else "0"
-    @matchCountContainer.textContent = content
+    @matchCountContainer.textContent = "Rapid Motion: #{content}"
 
   confirm: ->
     @confirmed = true

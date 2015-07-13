@@ -12,7 +12,7 @@ Config =
     order:   0
     type:    'boolean'
     default: false
-    description: "automatically land(confirm) if only one match exists"
+    description: "automatically land(confirm) if there is no other candidates"
   minimumInputLength:
     order:   1
     type:    'integer'
@@ -22,7 +22,7 @@ Config =
   wordRegExp:
     order:   2
     type:    'string'
-    default: '[@\\w-.():]+'
+    default: '[@\\w-.():?]+'
     description: "Used to build candidate List"
   showHoverIndicator:
     order:   3
@@ -43,16 +43,23 @@ module.exports =
     @subscriptions.add atom.commands.add 'atom-text-editor',
       'rapid-motion:forward':  => @start 'forward'
       'rapid-motion:backward': => @start 'backward'
-      'rapid-motion:dump': => @dump()
 
   getWordPattern: ->
-    pattern  = atom.config.get('rapid-motion.wordRegExp')
+    scope = @editor.getRootScopeDescriptor()
+    pattern = atom.config.get('rapid-motion.wordRegExp', {scope})
+    error = null
     try
       new RegExp(pattern, 'g')
-    catch e
-      # Auto FIX to default if invalid RegExp.
-      atom.config.set('rapid-motion.wordRegExp', Config.wordRegExp.default)
-      @getWordPattern()
+    catch error
+      content = """
+        rapid-motion:
+        * Invalid regular expression `#{pattern}` on scope `#{scope}`.
+        """
+      atom.notifications.addWarning content, dismissable: true
+    finally
+      if error
+        @getUI().cancel()
+
 
   deactivate: ->
     @container = null
@@ -96,6 +103,8 @@ module.exports =
     unless @matches.length
       @restoreEditorState()
       @debounceFlashScreen()
+      @hover?.destroy()
+      @container?.destroy()
       return
 
     if @matches.length is 1 and atom.config.get('rapid-motion.autoLand')
@@ -173,8 +182,8 @@ module.exports =
         @candidateProvider?.destroy()
         @candidateProvider = null
     @matches = []
-    @container?.destroy()
     @hover?.destroy()
+    @container?.destroy()
 
 
   getUI: ->

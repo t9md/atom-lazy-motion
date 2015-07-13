@@ -12,8 +12,7 @@
   "activationCommands": {
     "atom-text-editor": [
       "rapid-motion:forward",
-      "rapid-motion:backward",
-      "rapid-motion:dump"
+      "rapid-motion:backward"
     ]
   },
   "dependencies": {
