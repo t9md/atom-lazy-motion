@@ -1,6 +1,6 @@
 class Hover extends HTMLElement
   initialize: ({@editor, @match}) ->
-    @classList.add 'rapid-motion-hover'
+    @classList.add 'lazy-motion-hover'
     @style.marginLeft   = '5px'
     @style.marginTop    = '-20px'
     @style.paddingLeft  = '0.2em'
@@ -28,7 +28,7 @@ class Hover extends HTMLElement
 
 class Container extends HTMLElement
   initialize: (editor) ->
-    @classList.add 'rapid-motion', 'hover-container'
+    @classList.add 'lazy-motion', 'hover-container'
     editorView = atom.views.getView editor
     @overlayer = editorView.shadowRoot.querySelector('content[select=".overlayer"]')
     @overlayer.appendChild this
@@ -40,9 +40,9 @@ class Container extends HTMLElement
 
 
 module.exports =
-  Hover: document.registerElement 'rapid-motion-hover',
+  Hover: document.registerElement 'lazy-motion-hover',
     prototype: Hover.prototype
     extends:   'div'
-  Container: document.registerElement 'rapid-motion-hover-container',
+  Container: document.registerElement 'lazy-motion-hover-container',
     prototype: Container.prototype
     extends:   'div'

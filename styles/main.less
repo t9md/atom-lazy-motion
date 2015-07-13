@@ -1,37 +1,37 @@
 @import "ui-variables";
 @import "syntax-variables";
-.rapid-motion {
+.lazy-motion {
   &.round-box {
     box-sizing: border-box;
     border-radius: @component-border-radius;
   }
 }
 atom-text-editor::shadow {
-  .rapid-motion-unmatch .region {
+  .lazy-motion-unmatch .region {
     display: none;
   }
-  .rapid-motion-match .region {
-    .rapid-motion.round-box;
+  .lazy-motion-match .region {
+    .lazy-motion.round-box;
     background-color: transparent;
     border: 2px solid @syntax-result-marker-color;
   }
-  .rapid-motion-match.top .region {
+  .lazy-motion-match.top .region {
     border: 2px solid @syntax-color-renamed;
   }
-  .rapid-motion-match.bottom .region {
+  .lazy-motion-match.bottom .region {
     border: 2px solid @syntax-color-removed;
   }
-  .rapid-motion-match.current .region {
+  .lazy-motion-match.current .region {
     background-color: @syntax-selection-color;
   }
-  .rapid-motion-flash .region {
-    .rapid-motion.round-box;
+  .lazy-motion-flash .region {
+    .lazy-motion.round-box;
     background-color: @syntax-selection-flash-color;
   }
-  .rapid-motion-cursor .region {
+  .lazy-motion-cursor .region {
     background-color: @syntax-cursor-color;
   }
-  .rapid-motion-hover {
+  .lazy-motion-hover {
     z-index: 2147483647;
     position: absolute;
     color: @text-color-selected;
@@ -46,7 +46,7 @@ atom-text-editor::shadow {
     }
   }
 }
-.rapid-motion-ui {
+.lazy-motion-ui {
   .editor-container {
     padding: @component-padding;
   }

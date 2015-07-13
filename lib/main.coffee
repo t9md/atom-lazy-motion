@@ -41,18 +41,18 @@ module.exports =
 
     @subscriptions = subs = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
-      'rapid-motion:forward':  => @start 'forward'
-      'rapid-motion:backward': => @start 'backward'
+      'lazy-motion:forward':  => @start 'forward'
+      'lazy-motion:backward': => @start 'backward'
 
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()
-    pattern = atom.config.get('rapid-motion.wordRegExp', {scope})
+    pattern = atom.config.get('lazy-motion.wordRegExp', {scope})
     error = null
     try
       new RegExp(pattern, 'g')
     catch error
       content = """
-        rapid-motion:
+        lazy-motion:
         * Invalid regular expression `#{pattern}` on scope `#{scope}`.
         """
       atom.notifications.addWarning content, dismissable: true
@@ -95,7 +95,7 @@ module.exports =
   search: (direction, text) ->
     candidates = @getCandidates()
     # initial decoration to unmatch
-    @decorateMatches @matches, 'rapid-motion-unmatch'
+    @decorateMatches @matches, 'lazy-motion-unmatch'
     @matches = []
     return unless text
 
@@ -107,7 +107,7 @@ module.exports =
       @container?.destroy()
       return
 
-    if @matches.length is 1 and atom.config.get('rapid-motion.autoLand')
+    if @matches.length is 1 and atom.config.get('lazy-motion.autoLand')
       @index = 0
       @getUI().confirm()
       return
@@ -116,11 +116,11 @@ module.exports =
     @matches = _.sortBy @matches, (m) -> m.getScore()
     @index = _.sortedIndex @matches, @matchForCursor, (m) -> m.getScore()
 
-    @decorateMatches @matches, 'rapid-motion-match'
+    @decorateMatches @matches, 'lazy-motion-match'
     # Decorate Top and Bottom match differently
-    @matches[0].decorate 'rapid-motion-match top'
+    @matches[0].decorate 'lazy-motion-match top'
     if @matches.length > 1
-      @matches[@matches.length-1].decorate 'rapid-motion-match bottom'
+      @matches[@matches.length-1].decorate 'lazy-motion-match bottom'
 
     # @index can be 0 - N
     # Adjusting @index here to adapt to modification by @updateIndex().
@@ -132,7 +132,7 @@ module.exports =
     match.decorate 'current', 'append'
     match.flash()
     match.scroll()
-    @showHover match if atom.config.get('rapid-motion.showHoverIndicator')
+    @showHover match if atom.config.get('lazy-motion.showHoverIndicator')
     @lastCurrent = match
 
   showHover: (match) ->
@@ -158,7 +158,7 @@ module.exports =
     end = start.translate([0, 1])
     range = new Range(start, end)
     match = new Match(@editor, {range})
-    match.decorate 'rapid-motion-cursor'
+    match.decorate 'lazy-motion-cursor'
     match
 
   cancel: ->
@@ -220,7 +220,7 @@ module.exports =
 
     @flashingDecoration = @editor.decorateMarker marker,
       type: 'highlight'
-      class: 'rapid-motion-flash'
+      class: 'lazy-motion-flash'
 
     @flashingTimeout = setTimeout =>
       @flashingDecoration.getMarker().destroy()

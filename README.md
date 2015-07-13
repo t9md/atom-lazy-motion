@@ -1,13 +1,13 @@
-# rapid-motion
+# lazy-motion
 
 Rapid cursor positioning with **fuzzy**, **lazy** search.
 
-![gif](https://raw.githubusercontent.com/t9md/t9md/c944fc38bbc8e5f5a16b03616e127efc66911a1c/img/atom-rapid-motion.gif)
+![gif](https://raw.githubusercontent.com/t9md/t9md/3379ed41ea6fd3725245f5d37b3bb36f7e9b0683/img/atom-lazy-motion.gif)
 
 # Feature
 
 * Search word within buffer with fuzzy search by [fuzzaldrin](https://github.com/atom/fuzzaldrin).
-* Display matching count and `current / total` match in input panel and hover indicator(hover indicator is disabled by default).
+* Display `current / total` match in input panel and hover indicator(disabled by default).
 * Incrementally scroll(visit) to matched position.
 * Don't change cursor position unless you confirm(important for [cursor-history](https://atom.io/packages/cursor-history) like pakcage).
 * Differentiate color for top(blue) and bottom(red) entry of matches.
@@ -17,41 +17,42 @@ Rapid cursor positioning with **fuzzy**, **lazy** search.
 # Why
 
 Lets say you are editing over 200 lines of CoffeeScript file.  
-And you want to go to line where code `@container?.destroy()` is to modify it.  
+And you want to go to line where code `@container?.destroy()` is to change it.  
 
-By the power of rapid-motion, you can reach target by following way.
+With lazy-motion, you can reach target in following way.
 
-1. Invoke `rapid-motion:forward` from keymap.
-2. input `c?d` to input panel.
+1. Invoke `lazy-motion:forward` from keymap.
+2. Input `c?d` to input panel.
 3. `core:confirm` to land or `core:cancel` to cancel.
 
-## other example
-* `ca)` to reach lines containing `cancel()`.
-* `gemade` to reach `@flashingDecoration?.getMarker().destroy()`.
+## Other examples
+* `ca)` to reach line containing `cancel()`.
+* `gemade` to reach line containing `@flashingDecoration?.getMarker().destroy()`.
 
-Like the example above you can reach target position with very lazy and fuzzy typing.
+Like the example above you can reach target position with very lazy and fuzzy key type.
 
 ## Why *label jump* approach not worked for me.
-Until now I created [vim-smalls](https://github.com/t9md/vim-smalls/blob/master/README-JP.md) and its [Atom port](https://github.com/t9md/atom-smalls).  
 
-And hacked [jumpy](https://github.com/t9md/jumpy) and [vim-easymotion](https://github.com/t9md/vim-easymotion) as excercise to create  smalls.  
+Until now I released [vim-smalls](https://github.com/t9md/vim-smalls/blob/master/README-JP.md) and its [Atom port](https://github.com/t9md/atom-smalls).  
 
-But at least for me this *label jump* system not work, I coudn't addapt to it.  
+And also hacked [jumpy](https://github.com/t9md/jumpy) and [vim-easymotion](https://github.com/t9md/vim-easymotion) as exercise to create  smalls.  
+
+But as for me this *label jump* system not work, I couldn't adapt to it.  
 
 The reason is simple.  
 
-The *label jump* constrain me to enter label precisely which result in my focus(or zone or flow) lost.  
+The *label jump* constrains me to enter label precisely which result in my focus(or zone or flow) lost.  
 
-Of course this *label jump* packages let me reach target position with minimum key type.  
-But ,in my opinion, its good for demonstration
+Of course this *label jump* packages let me reach target position with minimum key typing.  
+But in my opinion, its only good for demonstration.
 
 In real world coding, the **brain context switch** the *label jump* enforces is **too expensive** to use on a daily basis.  
 
 # Commands
 
 ### atom-text-editor
-* `rapid-motion:forward`: Search forward.
-* `rapid-motion:backward`: Search backward.
+* `lazy-motion:forward`: Search forward.
+* `lazy-motion:backward`: Search backward.
 * `core:confirm`: confirm.
 * `core:cancel`:  cancel.
 
@@ -71,24 +72,24 @@ You need to set your own keymap in `keymap.cson`.
 
 ```coffeescript
 'atom-text-editor':
-  'ctrl-s':     'rapid-motion:forward'
-  'ctrl-cmd-r': 'rapid-motion:backward'
+  'ctrl-s':     'lazy-motion:forward'
+  'ctrl-cmd-r': 'lazy-motion:backward'
 
-'atom-text-editor.rapid-motion':
-  ']': 'rapid-motion:forward'
-  '[': 'rapid-motion:backward'
+'atom-text-editor.lazy-motion':
+  ']': 'lazy-motion:forward'
+  '[': 'lazy-motion:backward'
 ```
 
 * Emacs user
 
 ```coffeescript
 'atom-text-editor':
-  'ctrl-s': 'rapid-motion:forward'
-  'ctrl-r': 'rapid-motiion:backward'
+  'ctrl-s': 'lazy-motion:forward'
+  'ctrl-r': 'lazy-motion:backward'
 
-'.platform-darwin atom-text-editor.rapid-motion':
-  'ctrl-s': 'rapid-motion:forward'
-  'ctrl-r': 'rapid-motion:backward'
+'.platform-darwin atom-text-editor.lazy-motion':
+  'ctrl-s': 'lazy-motion:forward'
+  'ctrl-r': 'lazy-motion:backward'
   'ctrl-g': 'core:cancel'
 ```
 
@@ -96,11 +97,11 @@ You need to set your own keymap in `keymap.cson`.
 
 ```coffeescript
 'atom-text-editor.vim-mode.command-mode':
-  's': 'rapid-motion:search-forward'
+  's': 'lazy-motion:search-forward'
 
-'.platform-darwin atom-text-editor.rapid-motion[mini]':
-  ']':      'rapid-motion:forward'
-  '[':      'rapid-motion:backward'
+'.platform-darwin atom-text-editor.lazy-motion[mini]':
+  ']':      'lazy-motion:forward'
+  '[':      'lazy-motion:backward'
   ';':      'core:confirm'
   'ctrl-g': 'core:cancel'
 ```
@@ -111,7 +112,7 @@ Slow in large buffer.
 
 Tried to pre-generate candidate by `observeTexitEditors` but its not work.  
 Editing buffer with huge merkers is very slow.  
-So create marker on `rapid-motion` start and destroy on finish is better than that.  
+So create marker on `lazy-motion` start and destroy on finish is better than that.  
 
 # Language specific `wordRegExp` configuration.
 
@@ -123,11 +124,11 @@ See [Scoped Settings, Scopes and Scope Descriptors](https://atom.io/docs/latest/
 ```coffeescript
 "*": # This is global scope. Used as default.
   # <snip>
-  "rapid-motion":
+  "lazy-motion":
     wordRegExp: 'xxxx'
   # <snip>
 ".go.source": # This is Go specific,
-  "rapid-motion":
+  "lazy-motion":
     wordRegExp: 'xxxx'
 ```
 

@@ -3,7 +3,7 @@
 class UI extends HTMLElement
   createdCallback: ->
     @hiddenPanels = []
-    @classList.add 'rapid-motion-ui'
+    @classList.add 'lazy-motion-ui'
     @container = document.createElement 'div'
     @matchCountContainer = document.createElement 'div'
     @matchCountContainer.classList.add 'counter'
@@ -13,7 +13,7 @@ class UI extends HTMLElement
 
   initialize: (@main) ->
     @editorView = document.createElement 'atom-text-editor'
-    @editorView.classList.add 'editor', 'rapid-motion'
+    @editorView.classList.add 'editor', 'lazy-motion'
     @editorView.getModel().setMini true
     @editorView.setAttribute 'mini', ''
     @container.appendChild @editorView
@@ -21,9 +21,9 @@ class UI extends HTMLElement
     @panel = atom.workspace.addBottomPanel item: this, visible: false
 
     @subscriptions = new CompositeDisposable
-    @subscriptions.add atom.commands.add 'atom-text-editor.rapid-motion',
+    @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
       'core:confirm':        => @confirm()
-      'rapid-motion:cancel': => @cancel()
+      'lazy-motion:cancel': => @cancel()
       'core:cancel':         => @cancel()
       'click':               => @cancel()
       'blur':                => @cancel()
@@ -43,7 +43,7 @@ class UI extends HTMLElement
     subs.add @editor.onDidChange =>
       return if @isCleared()
       text = @editor.getText()
-      if text.length >= atom.config.get('rapid-motion.minimumInputLength')
+      if text.length >= atom.config.get('lazy-motion.minimumInputLength')
         @main.search @getDirection(), text
       @refresh()
 
@@ -60,7 +60,7 @@ class UI extends HTMLElement
   refresh: ->
     {total, current} = @main.getCount()
     content = if total isnt 0 then "#{current} / #{total}" else "0"
-    @matchCountContainer.textContent = "Rapid Motion: #{content}"
+    @matchCountContainer.textContent = "Lazy Motion: #{content}"
 
   confirm: ->
     @confirmed = true
@@ -91,6 +91,6 @@ class UI extends HTMLElement
     @remove()
 
 module.exports =
-document.registerElement 'rapid-motion-ui',
+document.registerElement 'lazy-motion-ui',
   extends: 'div'
   prototype: UI.prototype

@@ -43,7 +43,7 @@ class Match
   flash: ->
     decoration = @editor.decorateMarker @marker.copy(),
       type: 'highlight'
-      class: 'rapid-motion-flash'
+      class: 'lazy-motion-flash'
 
     setTimeout  ->
       decoration.getMarker().destroy()
