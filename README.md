@@ -1,6 +1,6 @@
 # rapid-motion
 
-Rapid cursor positioning with fuzzy search.
+Rapid cursor positioning with **fuzzy**, **lazy** search.
 
 ![gif](https://raw.githubusercontent.com/t9md/t9md/c944fc38bbc8e5f5a16b03616e127efc66911a1c/img/atom-rapid-motion.gif)
 
