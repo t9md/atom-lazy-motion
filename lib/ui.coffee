@@ -54,22 +54,22 @@ class UI extends HTMLElement
     @editorElement.focus()
     @showCounter()
 
+  unFocus: ->
+    @panel.hide()
+    atom.workspace.getActivePane().activate()
+
   confirm: ->
     return unless @editor.getText()
     @finished = true
     @main.land()
-
-    @panel.hide()
-    atom.workspace.getActivePane().activate()
+    @unFocus()
 
   cancel: ->
     # [NOTE] blur event happen on confirmed() in this case we shouldn't cancel
     return if @finished
     @finished = true
     @main.cancel()
-
-    @panel.hide()
-    atom.workspace.getActivePane().activate()
+    @unFocus()
 
   setDirection: (@direction) ->
   getDirection: ->

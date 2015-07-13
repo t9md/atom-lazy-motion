@@ -3,9 +3,6 @@ class Match
   constructor: (@editor, {@range, @matchText}) ->
     {@start, @end} = @range
 
-  isEqual: (other) ->
-    @start.isEqual other.start
-
   isTop: ->
     @decoration.getProperties()['class'].match 'top'
 
@@ -53,9 +50,5 @@ class Match
     {row, column} = @start
     row * 1000 + column
 
-  land: ->
-    @editor.setCursorBufferPosition @start
-
   destroy: ->
     @marker?.destroy()
-    # hakone

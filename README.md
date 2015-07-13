@@ -7,7 +7,7 @@ Rapid cursor positioning with **fuzzy**, **lazy** search.
 # Feature
 
 * Search word within buffer with fuzzy search by [fuzzaldrin](https://github.com/atom/fuzzaldrin).
-* Display `current / total` match in input panel and hover indicator(disabled by default).
+* Display `current / total` match count in input panel and hover indicator(disabled by default).
 * Incrementally scroll(visit) to matched position.
 * Don't change cursor position unless you confirm(important for [cursor-history](https://atom.io/packages/cursor-history) like pakcage).
 * Differentiate color for top(blue) and bottom(red) entry of matches.
@@ -133,6 +133,7 @@ See [Scoped Settings, Scopes and Scope Descriptors](https://atom.io/docs/latest/
 ```
 
 # TODO
+- [ ] Restore fold if canceled.
 - [x] Support language specific `wordRegExp` configuration.
 - [x] Show hover indicator to inform `current / total`.
 - [x] `AutoLand` if there is no other candidate.

@@ -5,8 +5,7 @@ _ = require 'underscore-plus'
 
 Match = null
 CandidateProvider = null
-Container = null
-Hover = null
+HoverContainer = null
 
 Config =
   autoLand:
@@ -37,47 +36,25 @@ module.exports =
 
   activate: ->
     Match = require './match'
-    {Container, Hover} = require './hover-indicator'
+    {HoverContainer} = require './hover-indicator'
     CandidateProvider = require './candidate-provider'
 
-    @subscriptions = subs = new CompositeDisposable
+    @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
       'lazy-motion:forward':  => @start 'forward'
       'lazy-motion:backward': => @start 'backward'
 
-  getWordPattern: ->
-    scope = @editor.getRootScopeDescriptor()
-    pattern = atom.config.get('lazy-motion.wordRegExp', {scope})
-    error = null
-    try
-      new RegExp(pattern, 'g')
-    catch error
-      content = """
-        lazy-motion:
-        * Invalid regular expression `#{pattern}` on scope `#{scope}`.
-        """
-      atom.notifications.addWarning content, dismissable: true
-    finally
-      if error
-        @getUI().cancel()
-
-
   deactivate: ->
     @ui?.destroy()
-    @container = null
-    @flashingTimeout = null
-    @searchHistory = null
     @subscriptions.dispose()
-    @cancel()
+    @reset()
 
   start: (direction) ->
     ui = @getUI()
     unless ui.isVisible()
-      @matchForCursor = null
+      @matchCursor = null
       @editor = atom.workspace.getActiveTextEditor()
-      @saveEditorState()
-      @index = 0
-      @matches = []
+      @restoreEditorState = @saveEditorState()
       ui.setDirection direction
       ui.focus()
     else
@@ -86,27 +63,22 @@ module.exports =
       @updateCurrent @matches[@updateIndex(direction)]
       ui.showCounter()
 
-  decorateMatches: (matches, klass) ->
-    for m in matches ? []
-      m.decorate klass
-
   getCandidates: ->
     @candidateProvider ?= new CandidateProvider(@editor, @getWordPattern())
     @candidateProvider.getCandidates()
 
   search: (direction, text) ->
-    candidates = @getCandidates()
-    # initial decoration to unmatch
     @decorateMatches @matches, 'lazy-motion-unmatch'
-    @matches = []
-    return unless text
+    @matches = [] # Need to reset for showCounter().
+    unless text
+      @container?.hide()
+      return
 
-    @matches = filter candidates, text, key: 'matchText'
+    @matches = filter @getCandidates(), text, key: 'matchText'
     unless @matches.length
-      @restoreEditorState()
+      # @restoreEditorState()
       @debounceFlashScreen()
-      @hover?.destroy()
-      @container?.destroy()
+      @container?.hide()
       return
 
     if @matches.length is 1 and atom.config.get('lazy-motion.autoLand')
@@ -114,37 +86,37 @@ module.exports =
       @getUI().confirm()
       return
 
-    @matchForCursor ?= @getMatchForCursor()
+    @matchCursor ?= @getMatchForCursor()
     @matches = _.sortBy @matches, (m) -> m.getScore()
-    @index = _.sortedIndex @matches, @matchForCursor, (m) -> m.getScore()
+    @refreshMatches @matches
 
-    @decorateMatches @matches, 'lazy-motion-match'
-    # Decorate Top and Bottom match differently
-    @matches[0].decorate 'lazy-motion-match top'
-    if @matches.length > 1
-      @matches[@matches.length-1].decorate 'lazy-motion-match bottom'
-
-    # @index can be 0 - N
     # Adjusting @index here to adapt to modification by @updateIndex().
+    @index  = _.sortedIndex @matches, @matchCursor, (m) -> m.getScore()
     @index -= 1 if direction is 'forward'
     @updateCurrent @matches[@updateIndex(direction)]
+
+  refreshMatches: (matches) ->
+    @decorateMatches matches, 'lazy-motion-match'
+    matches[0].decorate 'lazy-motion-match top'
+    if matches.length > 1
+      matches[matches.length-1].decorate 'lazy-motion-match bottom'
+
+  decorateMatches: (matches, klass) ->
+    for m in matches ? []
+      m.decorate klass
 
   updateCurrent: (match) ->
     @lastCurrent?.decorate 'current', 'remove'
     match.decorate 'current', 'append'
-    match.flash()
     match.scroll()
-    @showHover match if atom.config.get('lazy-motion.showHoverIndicator')
+    match.flash()
+    if atom.config.get('lazy-motion.showHoverIndicator')
+      @showHover match
     @lastCurrent = match
 
   showHover: (match) ->
-    @container = new Container()
-    @container.initialize @editor
-    @hover?.destroy()
-    @hover = new Hover()
-    @hover.initialize {@editor, match}
-    @container.appendChild @hover
-    @hover.setContent @getCount()
+    @container ?= new HoverContainer().initialize(@editor)
+    @container.show match, @getCount()
 
   updateIndex: (direction) ->
     if direction is 'forward'
@@ -165,28 +137,25 @@ module.exports =
 
   cancel: ->
     @restoreEditorState()
-    @editorState = null
-    @matchForCursor?.destroy()
-    @matchForCursor = null
-    @lastCurrent = null
     @reset()
 
   land: ->
-    @matches?[@index]?.land()
-    @matchForCursor?.destroy()
-    @matchForCursor = null
+    @editor.setCursorBufferPosition @matches[@index].start
     @reset()
 
   reset: ->
-    @index = 0
-    if @candidateProvider?
-      _.defer =>
-        @candidateProvider?.destroy()
-        @candidateProvider = null
-    @matches = []
-    @hover?.destroy()
-    @container?.destroy()
+    @flashingTimeout = null
+    @restoreEditorState = null
 
+    @matchCursor?.destroy()
+    @matchCursor = null
+
+    @candidateProvider?.destroy()
+    @candidateProvider = null
+
+    @lastCurrent = null
+    @container?.destroy()
+    @container = null
 
   getUI: ->
     @ui ?= (
@@ -194,20 +163,35 @@ module.exports =
       ui.initialize this
       ui)
 
+  getWordPattern: ->
+    scope = @editor.getRootScopeDescriptor()
+    pattern = atom.config.get('lazy-motion.wordRegExp', {scope})
+
+    try
+      new RegExp(pattern, 'g')
+    catch error
+      content = """
+        lazy-motion:
+        * Invalid regular expression `#{pattern}` on scope `#{scope}`.
+        """
+      atom.notifications.addWarning content, dismissable: true
+    finally
+      if error
+        @getUI().cancel()
+
   # Accessed from UI
   # -------------------------
   getCount: ->
-    if 0 <= @index < @matches.length
+    @matches ?= []
+    if @matches and (0 <= @index < @matches.length)
       { total: @matches.length, current: @index+1 }
     else
-      { total: @matches.length, current: 0 }
+      { total: 0, current: 0 }
 
   # Utility
   # -------------------------
   debounceFlashScreen: ->
-    @_debounceFlashScreen ?= _.debounce =>
-      @flashScreen()
-    , 150, true
+    @_debounceFlashScreen ?= _.debounce @flashScreen.bind(this), 150, true
     @_debounceFlashScreen()
 
   flashScreen: ->
@@ -229,8 +213,8 @@ module.exports =
       @flashingDecoration = null
     , 150
 
+  # Return function to restore state.
   saveEditorState: ->
-    @editorState = {scrollTop: @editor.getScrollTop()}
-
-  restoreEditorState: ->
-    @editor.setScrollTop @editorState.scrollTop if @editorState?
+    editorState = {scrollTop: @editor.getScrollTop()}
+    ->
+      @editor.setScrollTop editorState.scrollTop
