@@ -61,7 +61,6 @@ module.exports =
       ui.setDirection direction
       return if @matches.isEmpty()
       @matches.visit direction
-      @matches.redraw()
       if atom.config.get('lazy-motion.showHoverIndicator')
         @showHover @matches.getCurrent()
       ui.showCounter()
@@ -87,9 +86,10 @@ module.exports =
       @getUI().confirm()
       return
 
-    @matches.sort()
-    @matches.visit direction, from: @matchCursor ?= @getMatchForCursor()
-    @matches.redraw all: true
+    @matches.visit direction,
+      from: @matchCursor ?= @getMatchForCursor()
+      redrawAll: true
+
     if atom.config.get('lazy-motion.showHoverIndicator')
       @showHover @matches.getCurrent()
 
@@ -100,8 +100,7 @@ module.exports =
   getMatchForCursor: ->
     start = @editor.getCursorBufferPosition()
     end = start.translate([0, 1])
-    range = new Range(start, end)
-    match = new Match(@editor, {range})
+    match = new Match(@editor, range: new Range(start, end))
     match.decorate 'lazy-motion-cursor'
     match
 

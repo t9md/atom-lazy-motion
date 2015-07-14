@@ -70,7 +70,7 @@ class MatchList
   visit: (direction, options={}) ->
     @setIndex direction, options.from if options.from
     @updateIndex direction
-    # @redrawCurrent()
+    @redraw {all: options.redrawAll}
 
   updateIndex: (direction) ->
     if direction is 'forward'
@@ -85,10 +85,8 @@ class MatchList
     for m in @matches ? []
       m.decorate klass
 
-  sort: ->
-    @matches = _.sortBy @matches, (m) -> m.getScore()
-
   setIndex: (direction, matchCursor)->
+    @matches = _.sortBy @matches, (m) -> m.getScore()
     @index  = _.sortedIndex @matches, matchCursor, (m) ->
       m.getScore()
     # Adjusting @index here to adapt to modification by @updateIndex().

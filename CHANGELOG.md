@@ -1,3 +1,7 @@
+## 0.1.5 - Improve
+- Better fold restore.
+- Refactored, improve readability.
+
 ## 0.1.4 - Improve
 - [FIX] Incorrect flash screen area when fold exists.
 - Now restore fold if canceled.
