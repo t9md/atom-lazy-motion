@@ -195,7 +195,9 @@ module.exports =
     @_debounceFlashScreen()
 
   flashScreen: ->
-    [startRow, endRow] = @editor.getVisibleRowRange()
+    [startRow, endRow] = @editor.getVisibleRowRange().map (row) =>
+      @editor.bufferRowForScreenRow row
+
     range = new Range([startRow, 0], [endRow, Infinity])
     marker = @editor.markBufferRange range,
       invalidate: 'never'
