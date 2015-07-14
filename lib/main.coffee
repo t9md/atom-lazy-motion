@@ -61,6 +61,7 @@ module.exports =
       ui.setDirection direction
       return if @matches.isEmpty()
       @matches.visit direction
+      @matches.redraw()
       if atom.config.get('lazy-motion.showHoverIndicator')
         @showHover @matches.getCurrent()
       ui.showCounter()
@@ -70,15 +71,13 @@ module.exports =
     @candidateProvider.getCandidates()
 
   search: (direction, text) ->
-    @matches?.decorate 'lazy-motion-unmatch'
-    @matches = new MatchList()
-    # console.log @matches
-    # @matches = [] # Need to reset for showCounter().
+    @matches ?= new MatchList()
+    @matches.reset()
     unless text
       @container?.hide()
       return
 
-    @matches.set(filter @getCandidates(), text, key: 'matchText')
+    @matches.replace(filter @getCandidates(), text, key: 'matchText')
     if @matches.isEmpty()
       @debounceFlashScreen()
       @container?.hide()
@@ -88,10 +87,9 @@ module.exports =
       @getUI().confirm()
       return
 
-    @matchCursor ?= @getMatchForCursor()
     @matches.sort()
-    @matches.redraw()
-    @matches.visit direction, from: @matchCursor
+    @matches.visit direction, from: @matchCursor ?= @getMatchForCursor()
+    @matches.redraw all: true
     if atom.config.get('lazy-motion.showHoverIndicator')
       @showHover @matches.getCurrent()
 
@@ -125,9 +123,11 @@ module.exports =
     @candidateProvider?.destroy()
     @candidateProvider = null
 
-    @lastCurrent = null
     @container?.destroy()
     @container = null
+
+    @matches?.destroy()
+    @matches = null
 
   getUI: ->
     @ui ?= (
