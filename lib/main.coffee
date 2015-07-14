@@ -137,6 +137,8 @@ module.exports =
 
   cancel: ->
     @restoreEditorState()
+    for candidate in @getCandidates()
+      candidate.restoreFold()
     @reset()
 
   land: ->

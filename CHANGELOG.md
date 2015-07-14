@@ -1,3 +1,7 @@
+## 0.1.4 - Improve
+- [FIX] Incorrect flash screen area when fold exists.
+- Now restore fold if canceled.
+
 ## 0.1.3 - Improve
 - Doc fix `lazy-motion:search-forward` should be `lazy-motion:forward`.
 - Modify CSS padding on input panel.

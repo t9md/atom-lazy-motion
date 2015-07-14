@@ -1,3 +1,4 @@
+_ = require 'underscore-plus'
 module.exports =
 class Match
   constructor: (@editor, {@range, @matchText}) ->
@@ -33,9 +34,19 @@ class Match
     screenRange = @marker.getScreenRange()
     @editor.scrollToScreenRange screenRange, center: true
     bufferRow = @marker.getStartBufferPosition().row
-    # [TODO] restore fold after land() or cancel()
     if @editor.isFoldedAtBufferRow(bufferRow)
-      @editor.unfoldBufferRow(bufferRow)
+      @unfold bufferRow
+
+  unfold: (row) ->
+    @foldsSaved = @editor.displayBuffer.foldsContainingBufferRow row
+    @editor.unfoldBufferRow row
+
+  restoreFold: ->
+    return unless @foldsSaved
+    folds = _.sortBy @foldsSaved, (fold) -> fold.getStartRow()
+    for fold in folds.reverse()
+      @editor.foldBufferRow fold.getStartRow()
+    @foldsSaved = null
 
   flash: ->
     decoration = @editor.decorateMarker @marker.copy(),
@@ -52,3 +63,4 @@ class Match
 
   destroy: ->
     @marker?.destroy()
+    @foldsSaved = null

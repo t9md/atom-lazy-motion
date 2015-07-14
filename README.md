@@ -134,7 +134,7 @@ See [Scoped Settings, Scopes and Scope Descriptors](https://atom.io/docs/latest/
 ```
 
 # TODO
-- [ ] Restore fold if canceled.
+- [x] Restore fold if canceled.
 - [x] Support language specific `wordRegExp` configuration.
 - [x] Show hover indicator to inform `current / total`.
 - [x] `AutoLand` if there is no other candidate.
