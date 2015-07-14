@@ -1,5 +1,6 @@
 # lazy-motion
 
+
 Rapid cursor positioning with **fuzzy**, **lazy** search.
 
 ![gif](https://raw.githubusercontent.com/t9md/t9md/3379ed41ea6fd3725245f5d37b3bb36f7e9b0683/img/atom-lazy-motion.gif)
@@ -97,9 +98,9 @@ You need to set your own keymap in `keymap.cson`.
 
 ```coffeescript
 'atom-text-editor.vim-mode.command-mode':
-  's': 'lazy-motion:search-forward'
+  's': 'lazy-motion:forward'
 
-'.platform-darwin atom-text-editor.lazy-motion[mini]':
+'.platform-darwin atom-text-editor.lazy-motion':
   ']':      'lazy-motion:forward'
   '[':      'lazy-motion:backward'
   ';':      'core:confirm'

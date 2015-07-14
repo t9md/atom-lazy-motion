@@ -1,3 +1,7 @@
+## 0.1.3 - Improve
+- Doc fix `lazy-motion:search-forward` should be `lazy-motion:forward`.
+- Modify CSS padding on input panel.
+
 ## 0.1.2 - Refactoring
 - Cleanup code, fix minor bug.
 - Change default: Enable hover indicator by default.
