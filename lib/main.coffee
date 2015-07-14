@@ -59,8 +59,10 @@ module.exports =
       ui.focus()
     else
       ui.setDirection direction
-      return unless @matches.length
-      @updateCurrent @matches[@updateIndex(direction)]
+      return if @matches.isEmpty()
+      @matches.visit direction
+      if atom.config.get('lazy-motion.showHoverIndicator')
+        @showHover @matches.getCurrent()
       ui.showCounter()
 
   getCandidates: ->
@@ -68,63 +70,34 @@ module.exports =
     @candidateProvider.getCandidates()
 
   search: (direction, text) ->
-    @decorateMatches @matches, 'lazy-motion-unmatch'
-    @matches = [] # Need to reset for showCounter().
+    @matches?.decorate 'lazy-motion-unmatch'
+    @matches = new MatchList()
+    # console.log @matches
+    # @matches = [] # Need to reset for showCounter().
     unless text
       @container?.hide()
       return
 
-    @matches = filter @getCandidates(), text, key: 'matchText'
-    unless @matches.length
+    @matches.set(filter @getCandidates(), text, key: 'matchText')
+    if @matches.isEmpty()
       @debounceFlashScreen()
       @container?.hide()
       return
 
-    if @matches.length is 1 and atom.config.get('lazy-motion.autoLand')
-      @index = 0
+    if @matches.isOnly() and atom.config.get('lazy-motion.autoLand')
       @getUI().confirm()
       return
 
     @matchCursor ?= @getMatchForCursor()
-    @matches = _.sortBy @matches, (m) -> m.getScore()
-    @refreshMatches @matches
-
-    # Adjusting @index here to adapt to modification by @updateIndex().
-    @index  = _.sortedIndex @matches, @matchCursor, (m) -> m.getScore()
-    @index -= 1 if direction is 'forward'
-    @updateCurrent @matches[@updateIndex(direction)]
-
-  refreshMatches: (matches) ->
-    @decorateMatches matches, 'lazy-motion-match'
-    matches[0].decorate 'lazy-motion-match top'
-    if matches.length > 1
-      matches[matches.length-1].decorate 'lazy-motion-match bottom'
-
-  decorateMatches: (matches, klass) ->
-    for m in matches ? []
-      m.decorate klass
-
-  updateCurrent: (match) ->
-    @lastCurrent?.decorate 'current', 'remove'
-    match.decorate 'current', 'append'
-    match.scroll()
-    match.flash()
+    @matches.sort()
+    @matches.redraw()
+    @matches.visit direction, from: @matchCursor
     if atom.config.get('lazy-motion.showHoverIndicator')
-      @showHover match
-    @lastCurrent = match
+      @showHover @matches.getCurrent()
 
   showHover: (match) ->
     @container ?= new HoverContainer().initialize(@editor)
     @container.show match, @getCount()
-
-  updateIndex: (direction) ->
-    if direction is 'forward'
-      @index += 1
-      @index = 0 if @index is @matches.length
-    else if direction is 'backward'
-      @index -= 1
-      @index = (@matches.length - 1) if @index is -1
-    @index
 
   getMatchForCursor: ->
     start = @editor.getCursorBufferPosition()
@@ -139,7 +112,7 @@ module.exports =
     @reset()
 
   land: ->
-    @editor.setCursorBufferPosition @matches[@index].start
+    @editor.setCursorBufferPosition @matches.getCurrent().start
     @reset()
 
   reset: ->
@@ -181,11 +154,7 @@ module.exports =
   # Accessed from UI
   # -------------------------
   getCount: ->
-    @matches ?= []
-    if @matches and (0 <= @index < @matches.length)
-      { total: @matches.length, current: @index+1 }
-    else
-      { total: 0, current: 0 }
+    @matches.getInfo()
 
   # Utility
   # -------------------------

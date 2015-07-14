@@ -53,24 +53,23 @@ class Match
   destroy: ->
     @marker?.destroy()
 
-
 class MatchList
-  constructor: (@matches) ->
-    @index = 0
+  constructor: ->
+    @index       = 0
+    @matches     = []
+    @lastCurrent = null
 
-  isEmpty: ->
-    @matches.length is 0
+  set: (@matches) ->
 
-  forward: ->
-    @updateIndex 'forward'
-    @updateCurrent()
+  isEmpty:  -> @matches.length is 0
+  isOnly:   -> @matches.length is 1
+  getFirst: -> _.first @matches
+  getLast:  -> _.last @matches
 
-  backward: ->
-    @updateIndex 'backward'
-    @updateCurrent()
-
-  getIndex: ->
-    @index
+  visit: (direction, options={}) ->
+    @setIndex direction, options.from if options.from
+    @updateIndex direction
+    @redrawCurrent()
 
   updateIndex: (direction) ->
     if direction is 'forward'
@@ -84,14 +83,37 @@ class MatchList
   getCurrent: ->
     @matches[@index]
 
-  updateCurrent: ->
-    current = @getCurrent()
+  decorate: (klass) ->
+    for m in @matches ? []
+      m.decorate klass
+
+  sort: ->
+    @matches = _.sortBy @matches, (m) -> m.getScore()
+
+  setIndex: (direction, matchCursor)->
+    @index  = _.sortedIndex @matches, matchCursor, (m) ->
+      m.getScore()
+    # Adjusting @index here to adapt to modification by @updateIndex().
+    @index -= 1 if direction is 'forward'
+
+  redraw: ->
+    @decorate 'lazy-motion-match'
+    @getFirst().decorate 'lazy-motion-match top'
+    if @matches.length > 1
+      @getLast().decorate 'lazy-motion-match bottom'
+
+  redrawCurrent: ->
     @lastCurrent?.decorate 'current', 'remove'
+    current = @getCurrent()
     current.decorate 'current', 'append'
     current.scroll()
     current.flash()
     @lastCurrent = current
-    if atom.config.get('lazy-motion.showHoverIndicator')
-      @showHover current
+
+  getInfo: ->
+    if @matches and (0 <= @index < @matches.length)
+      { total: @matches.length, current: @index+1 }
+    else
+      { total: 0, current: 0 }
 
 module.exports = {Match, MatchList}
