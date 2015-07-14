@@ -1,5 +1,5 @@
 _ = require 'underscore-plus'
-module.exports =
+
 class Match
   constructor: (@editor, {@range, @matchText}) ->
     {@start, @end} = @range
@@ -35,18 +35,7 @@ class Match
     @editor.scrollToScreenRange screenRange, center: true
     bufferRow = @marker.getStartBufferPosition().row
     if @editor.isFoldedAtBufferRow(bufferRow)
-      @unfold bufferRow
-
-  unfold: (row) ->
-    @foldsSaved = @editor.displayBuffer.foldsContainingBufferRow row
-    @editor.unfoldBufferRow row
-
-  restoreFold: ->
-    return unless @foldsSaved
-    folds = _.sortBy @foldsSaved, (fold) -> fold.getStartRow()
-    for fold in folds.reverse()
-      @editor.foldBufferRow fold.getStartRow()
-    @foldsSaved = null
+      @editor.unfoldBufferRow bufferRow
 
   flash: ->
     decoration = @editor.decorateMarker @marker.copy(),
@@ -63,4 +52,46 @@ class Match
 
   destroy: ->
     @marker?.destroy()
-    @foldsSaved = null
+
+
+class MatchList
+  constructor: (@matches) ->
+    @index = 0
+
+  isEmpty: ->
+    @matches.length is 0
+
+  forward: ->
+    @updateIndex 'forward'
+    @updateCurrent()
+
+  backward: ->
+    @updateIndex 'backward'
+    @updateCurrent()
+
+  getIndex: ->
+    @index
+
+  updateIndex: (direction) ->
+    if direction is 'forward'
+      @index += 1
+      @index = 0 if @index is @matches.length
+    else if direction is 'backward'
+      @index -= 1
+      @index = (@matches.length - 1) if @index is -1
+    @index
+
+  getCurrent: ->
+    @matches[@index]
+
+  updateCurrent: ->
+    current = @getCurrent()
+    @lastCurrent?.decorate 'current', 'remove'
+    current.decorate 'current', 'append'
+    current.scroll()
+    current.flash()
+    @lastCurrent = current
+    if atom.config.get('lazy-motion.showHoverIndicator')
+      @showHover current
+
+module.exports = {Match, MatchList}

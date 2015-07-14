@@ -1,24 +1,24 @@
-Match = require './match'
+{Match} = require './match'
 
 module.exports =
 class CandidateProvider
   candidates: null
 
-  constructor: (@editor, @wordPattern) ->
-    @candidates = @buildCandidates()
+  constructor: (editor, pattern) ->
+    @candidates = @buildCandidates editor, pattern
 
   getCandidates: ->
     @candidates
 
-  buildCandidates: ->
+  buildCandidates: (editor, pattern) ->
     matches = []
-    @editor.scan @wordPattern, ({range, matchText}) =>
-      matches.push new Match(@editor, {range, matchText})
+    editor.scan pattern, ({range, matchText}) =>
+      matches.push new Match(editor, {range, matchText})
     matches
 
   destroy: ->
     for match in @candidates
       match.destroy()
     @candidates = null
-    @editor = null
+    editor = null
     @wordPattern = null

@@ -4,6 +4,7 @@
 _ = require 'underscore-plus'
 
 Match = null
+MatchList = null
 CandidateProvider = null
 HoverContainer = null
 
@@ -35,7 +36,7 @@ module.exports =
   container: null
 
   activate: ->
-    Match = require './match'
+    {Match, MatchList} = require './match'
     {HoverContainer} = require './hover-indicator'
     CandidateProvider = require './candidate-provider'
 
@@ -52,9 +53,8 @@ module.exports =
   start: (direction) ->
     ui = @getUI()
     unless ui.isVisible()
-      @matchCursor = null
       @editor = atom.workspace.getActiveTextEditor()
-      @restoreEditorState = @saveEditorState()
+      @restoreEditorState = @saveEditorState @editor
       ui.setDirection direction
       ui.focus()
     else
@@ -76,7 +76,6 @@ module.exports =
 
     @matches = filter @getCandidates(), text, key: 'matchText'
     unless @matches.length
-      # @restoreEditorState()
       @debounceFlashScreen()
       @container?.hide()
       return
@@ -137,8 +136,6 @@ module.exports =
 
   cancel: ->
     @restoreEditorState()
-    for candidate in @getCandidates()
-      candidate.restoreFold()
     @reset()
 
   land: ->
@@ -146,7 +143,7 @@ module.exports =
     @reset()
 
   reset: ->
-    @flashingTimeout = null
+    @flashingTimeout    = null
     @restoreEditorState = null
 
     @matchCursor?.destroy()
@@ -217,8 +214,12 @@ module.exports =
       @flashingDecoration = null
     , 150
 
-  # Return function to restore state.
-  saveEditorState: ->
-    editorState = {scrollTop: @editor.getScrollTop()}
+  # Return function to restore editor state.
+  saveEditorState: (editor) ->
+    scrollTop = editor.getScrollTop()
+    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) =>
+      editor.displayBuffer.foldForMarker(m).getStartRow()
     ->
-      @editor.setScrollTop editorState.scrollTop
+      for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
+        editor.foldBufferRow row
+      editor.setScrollTop scrollTop
