@@ -20,5 +20,3 @@ class CandidateProvider
     for match in @candidates
       match.destroy()
     @candidates = null
-    editor = null
-    @wordPattern = null

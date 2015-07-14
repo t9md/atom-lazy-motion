@@ -47,8 +47,10 @@ class Match
     , 150
 
   getScore: ->
-    {row, column} = @start
-    row * 1000 + column
+    @score ?= (
+      {row, column} = @start
+      row * 1000 + column
+    )
 
   destroy: ->
     @marker?.destroy()

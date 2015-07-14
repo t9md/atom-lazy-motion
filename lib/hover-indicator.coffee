@@ -7,13 +7,9 @@ class Hover extends HTMLElement
     @style.paddingRight = '0.2em'
     this
 
-  reset: ->
+  show: ({editor, match, counter}) ->
     @classList.remove 'top'
     @classList.remove 'bottom'
-
-  show: ({editor, match, counter}) ->
-    @reset()
-    @style.display = 'inline-block'
     @classList.add 'top'    if match.isTop()
     @classList.add 'bottom' if match.isBottom()
 
@@ -21,7 +17,7 @@ class Hover extends HTMLElement
     px               = editorView.pixelPositionForBufferPosition match.end
     top              = px.top  - editor.getScrollTop()
     left             = px.left - editor.getScrollLeft()
-    @style.top       = top + 'px'
+    @style.top       = top  + 'px'
     @style.left      = left + 'px'
     @style.marginTop = '0px' if top <= 0
 
@@ -39,14 +35,10 @@ class Container extends HTMLElement
     @overlayer.appendChild this
     this
 
-  getHover: ->
-    hover = new HoverElemnt()
-    @appendChild hover
-    hover
-
   show: (match, counter) ->
     @hover?.destroy()
-    @hover = @getHover()
+    @hover = new HoverElemnt()
+    @appendChild @hover
     @hover.show {@editor, match, counter}
 
   hide: ->
