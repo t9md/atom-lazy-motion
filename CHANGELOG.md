@@ -1,3 +1,6 @@
+## 0.1.9 - Refactoring
+- Cleanup code.
+
 ## 0.1.8 - Refactoring
 - Remove unnecessary `UI::setDirection` method
 

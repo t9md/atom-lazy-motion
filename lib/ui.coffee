@@ -60,7 +60,6 @@ class UI extends HTMLElement
     atom.workspace.getActivePane().activate()
 
   confirm: ->
-    return unless @editor.getText()
     return if @main.matches.isEmpty()
     @finished = true
     @main.land()

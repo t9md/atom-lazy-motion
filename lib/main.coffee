@@ -37,8 +37,8 @@ module.exports =
 
   activate: ->
     {Match, MatchList} = require './match'
-    {HoverContainer} = require './hover-indicator'
-    CandidateProvider = require './candidate-provider'
+    {HoverContainer}   = require './hover-indicator'
+    CandidateProvider  = require './candidate-provider'
 
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
@@ -53,8 +53,9 @@ module.exports =
   start: (@direction) ->
     ui = @getUI()
     unless ui.isVisible()
-      @editor = atom.workspace.getActiveTextEditor()
+      @editor = @getEditor()
       @restoreEditorState = @saveEditorState @editor
+      @matches = new MatchList()
       ui.focus()
     else
       return if @matches.isEmpty()
@@ -68,7 +69,6 @@ module.exports =
     @candidateProvider.getCandidates()
 
   search: (text) ->
-    @matches ?= new MatchList()
     @matches.reset()
     unless text
       @container?.hide()
@@ -76,7 +76,7 @@ module.exports =
 
     @matches.replace fuzzaldrin.filter(@getCandidates(), text, key: 'matchText')
     if @matches.isEmpty()
-      @debounceFlashScreen()
+      @debouncedFlashScreen()
       @container?.hide()
       return
 
@@ -160,9 +160,22 @@ module.exports =
 
   # Utility
   # -------------------------
-  debounceFlashScreen: ->
-    @_debounceFlashScreen ?= _.debounce @flashScreen.bind(this), 150, true
-    @_debounceFlashScreen()
+  getEditor: ->
+    atom.workspace.getActiveTextEditor()
+
+  # Return function to restore editor state.
+  saveEditorState: (editor) ->
+    scrollTop = editor.getScrollTop()
+    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) =>
+      editor.displayBuffer.foldForMarker(m).getStartRow()
+    ->
+      for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
+        editor.foldBufferRow row
+      editor.setScrollTop scrollTop
+
+  debouncedFlashScreen: ->
+    @_debouncedFlashScreen ?= _.debounce @flashScreen.bind(this), 150, true
+    @_debouncedFlashScreen()
 
   flashScreen: ->
     [startRow, endRow] = @editor.getVisibleRowRange().map (row) =>
@@ -184,13 +197,3 @@ module.exports =
       @flashingDecoration.getMarker().destroy()
       @flashingDecoration = null
     , 150
-
-  # Return function to restore editor state.
-  saveEditorState: (editor) ->
-    scrollTop = editor.getScrollTop()
-    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) =>
-      editor.displayBuffer.foldForMarker(m).getStartRow()
-    ->
-      for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
-        editor.foldBufferRow row
-      editor.setScrollTop scrollTop

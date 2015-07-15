@@ -53,75 +53,71 @@ class Match
     )
 
   destroy: ->
+    @range = @start = @end = @score = @editor = null
     @marker?.destroy()
+    @marker = @decoration = null
 
 class MatchList
   constructor: ->
-    @index       = 0
-    @matches     = []
-    @lastCurrent = null
+    @index     = 0
+    @entries   = []
+    @lastMatch = null
 
-  replace: (@matches) ->
+  replace: (@entries) ->
 
-  isEmpty:    -> @matches.length is 0
-  isOnly:     -> @matches.length is 1
-  getFirst:   -> _.first @matches
-  getLast:    -> _.last @matches
-  getCurrent: -> @matches[@index]
+  isEmpty:    -> @entries.length is 0
+  isOnly:     -> @entries.length is 1
+  getCurrent: -> @entries[@index]
 
   visit: (direction, options={}) ->
-    @setIndex direction, options.from if options.from
-    @updateIndex direction
+    if options.from
+      @setIndex direction, options.from
+    else
+      @updateIndex direction
     @redraw {all: options.redrawAll}
+
+  setIndex: (direction, matchCursor)->
+    @entries = _.sortBy @entries, (m) -> m.getScore()
+    @index   = _.sortedIndex @entries, matchCursor, (m) -> m.getScore()
+    # Adjusting @index here to adapt to modification by @updateIndex().
+    @index -= 1 if direction is 'forward'
+    @updateIndex direction
 
   updateIndex: (direction) ->
     if direction is 'forward'
-      @index += 1
-      @index = 0 if @index is @matches.length
-    else if direction is 'backward'
+      @index = (@index + 1) % @entries.length
+    else
       @index -= 1
-      @index = (@matches.length - 1) if @index is -1
-    @index
-
-  decorate: (klass) ->
-    for m in @matches ? []
-      m.decorate klass
-
-  setIndex: (direction, matchCursor)->
-    @matches = _.sortBy @matches, (m) -> m.getScore()
-    @index  = _.sortedIndex @matches, matchCursor, (m) ->
-      m.getScore()
-    # Adjusting @index here to adapt to modification by @updateIndex().
-    @index -= 1 if direction is 'forward'
+      @index = (@entries.length - 1) if @index is -1
 
   redraw: (options={}) ->
     if options.all
-      @decorate 'lazy-motion-match'
-      @getFirst().decorate 'lazy-motion-match top'
-      if @matches.length > 1
-        @getLast().decorate 'lazy-motion-match bottom'
+      [first, others..., last] = @entries
+      @decorate others, 'lazy-motion-match'
+      first.decorate 'lazy-motion-match top'
+      last?.decorate 'lazy-motion-match bottom'
 
     # update current
-    @lastCurrent?.decorate 'current', 'remove'
+    @lastMatch?.decorate 'current', 'remove'
     current = @getCurrent()
     current.decorate 'current', 'append'
     current.scroll()
     current.flash()
-    @lastCurrent = current
+    @lastMatch = current
+
+  decorate: (matches, klass) ->
+    for m in matches ? []
+      m.decorate klass
 
   reset: ->
-    @decorate 'lazy-motion-unmatch'
+    @decorate @entries, 'lazy-motion-unmatch'
     @replace([])
 
   getInfo: ->
-    if @matches and (0 <= @index < @matches.length)
-      { total: @matches.length, current: @index+1 }
-    else
-      { total: 0, current: 0 }
+    total: @entries.length,
+    current: if @isEmpty() then 0 else @index+1
 
   destroy: ->
-    @index = null
-    @matches = null
-    @lastCurrent = null
+    @index = @entries = @lastMatch = null
 
 module.exports = {Match, MatchList}
