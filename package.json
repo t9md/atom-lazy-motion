@@ -1,7 +1,7 @@
 {
   "name": "lazy-motion",
   "main": "./lib/main",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Rapid cursor positioning with fuzzy search",
   "keywords": [],
   "repository": "https://github.com/t9md/atom-lazy-motion",
