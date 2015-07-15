@@ -60,6 +60,7 @@ class UI extends HTMLElement
 
   confirm: ->
     return unless @editor.getText()
+    return if @main.matches.isEmpty()
     @finished = true
     @main.land()
     @unFocus()

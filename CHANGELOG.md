@@ -1,3 +1,6 @@
+## 0.1.6 - FIX
+- [FIX] land() throw error if there is no matches when confirmed().
+
 ## 0.1.5 - Improve
 - Better fold restore.
 - Refactored, improve readability.
