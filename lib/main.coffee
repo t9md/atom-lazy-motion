@@ -109,7 +109,12 @@ module.exports =
     @reset()
 
   land: ->
-    @editor.setCursorBufferPosition @matches.getCurrent().start
+    point = @matches.getCurrent().start
+    if @editor.getLastSelection().isEmpty()
+      @editor.setCursorBufferPosition point
+    else
+      @editor.selectToBufferPosition point
+
     @reset()
 
   reset: ->

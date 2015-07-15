@@ -1,3 +1,6 @@
+## 0.1.7 - Improve
+- `selectToBufferPosition` if start with selection.
+
 ## 0.1.6 - FIX
 - [FIX] land() throw error if there is no matches when confirmed().
 
