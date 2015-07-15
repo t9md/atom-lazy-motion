@@ -101,11 +101,46 @@ You need to set your own keymap in `keymap.cson`.
   's': 'lazy-motion:forward'
 
 '.platform-darwin atom-text-editor.lazy-motion':
+  'ctrl-u': 'editor:delete-to-beginning-of-line'
   ']':      'lazy-motion:forward'
   '[':      'lazy-motion:backward'
   ';':      'core:confirm'
   'ctrl-g': 'core:cancel'
 ```
+
+# Change Style
+
+Style used in lazy-motion is defined in [main.less](https://github.com/t9md/atom-lazy-motion/blob/master/styles/main.less).  
+You can change style bye overwriting these style in your `style.css`.  
+
+e.g.
+
+```less
+atom-text-editor::shadow {
+  // Change border
+  .lazy-motion-match.top .region {
+    border-width: 1px;
+  }
+  .lazy-motion-match.bottom .region {
+    border-width: 1px;
+  }
+  .lazy-motion-match.current .region {
+    border-width: 2px;
+  }
+  // Change hover label
+  .lazy-motion-hover {
+    color: @text-color-selected;
+    background-color: @syntax-selection-color;
+    &.top {
+      background-color: @syntax-color-renamed;
+    }
+    &.bottom {
+      background-color: @syntax-color-removed;
+    }
+  }
+}
+```
+
 
 # Limitation
 
