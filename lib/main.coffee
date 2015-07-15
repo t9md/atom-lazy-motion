@@ -1,6 +1,6 @@
 {CompositeDisposable, Range, TextEditor} = require 'atom'
 
-{filter} = require 'fuzzaldrin'
+fuzzaldrin = require 'fuzzaldrin'
 _ = require 'underscore-plus'
 
 Match = null
@@ -50,17 +50,15 @@ module.exports =
     @subscriptions.dispose()
     @reset()
 
-  start: (direction) ->
+  start: (@direction) ->
     ui = @getUI()
     unless ui.isVisible()
       @editor = atom.workspace.getActiveTextEditor()
       @restoreEditorState = @saveEditorState @editor
-      ui.setDirection direction
       ui.focus()
     else
-      ui.setDirection direction
       return if @matches.isEmpty()
-      @matches.visit direction
+      @matches.visit @direction
       if atom.config.get('lazy-motion.showHoverIndicator')
         @showHover @matches.getCurrent()
       ui.showCounter()
@@ -69,14 +67,14 @@ module.exports =
     @candidateProvider ?= new CandidateProvider(@editor, @getWordPattern())
     @candidateProvider.getCandidates()
 
-  search: (direction, text) ->
+  search: (text) ->
     @matches ?= new MatchList()
     @matches.reset()
     unless text
       @container?.hide()
       return
 
-    @matches.replace(filter @getCandidates(), text, key: 'matchText')
+    @matches.replace fuzzaldrin.filter(@getCandidates(), text, key: 'matchText')
     if @matches.isEmpty()
       @debounceFlashScreen()
       @container?.hide()
@@ -86,9 +84,8 @@ module.exports =
       @getUI().confirm()
       return
 
-    @matches.visit direction,
-      from: @matchCursor ?= @getMatchForCursor()
-      redrawAll: true
+    @matchCursor ?= @getMatchForCursor()
+    @matches.visit @direction, from: @matchCursor, redrawAll: true
 
     if atom.config.get('lazy-motion.showHoverIndicator')
       @showHover @matches.getCurrent()
@@ -114,7 +111,6 @@ module.exports =
       @editor.setCursorBufferPosition point
     else
       @editor.selectToBufferPosition point
-
     @reset()
 
   reset: ->
@@ -132,6 +128,8 @@ module.exports =
 
     @matches?.destroy()
     @matches = null
+
+    @direction = null
 
   getUI: ->
     @ui ?= (

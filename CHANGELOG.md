@@ -1,3 +1,6 @@
+## 0.1.8 - Refactoring
+- Remove unnecessary `UI::setDirection` method
+
 ## 0.1.7 - Improve
 - `selectToBufferPosition` if start with selection.
 

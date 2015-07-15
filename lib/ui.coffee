@@ -23,10 +23,11 @@ class UI extends HTMLElement
   initialize: (@main) ->
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
-      'core:confirm':       => @confirm()
-      'core:cancel':        => @cancel()
-      'click':              => @cancel()
-      'blur':               => @cancel()
+      'core:confirm': => @confirm()
+      'core:cancel':  => @cancel()
+      'click':        => @cancel()
+      'blur':         => @cancel()
+
     @handleInput()
     this
 
@@ -36,7 +37,7 @@ class UI extends HTMLElement
     subs.add @editor.onDidChange =>
       text = @editor.getText()
       if text.length >= atom.config.get('lazy-motion.minimumInputLength')
-        @main.search @getDirection(), text
+        @main.search text
       @showCounter()
 
     subs.add @editor.onDidDestroy =>
@@ -71,10 +72,6 @@ class UI extends HTMLElement
     @finished = true
     @main.cancel()
     @unFocus()
-
-  setDirection: (@direction) ->
-  getDirection: ->
-    @direction
 
   isVisible: ->
     @panel.isVisible()
