@@ -10,7 +10,8 @@ class Match
   isBottom: ->
     @decoration.getProperties()['class'].match 'bottom'
 
-  decorate: (klass, action='replace') ->
+  decorate: (klass, {action}={}) ->
+    action ?= 'replace'
     unless @decoration?
       @decoration = @decorateMarker {type: 'highlight', class: klass}
       return
@@ -102,9 +103,9 @@ class MatchList
       last?.decorate 'lazy-motion-match bottom'
 
     # update current
-    @lastMatch?.decorate 'current', 'remove'
+    @lastMatch?.decorate 'current', action: 'remove'
     current = @getCurrent()
-    current.decorate 'current', 'append'
+    current.decorate 'current', action: 'append'
     current.scroll()
     current.flash()
     @lastMatch = current
