@@ -73,8 +73,10 @@ In real world coding, the **brain context switch** the *label jump* enforces is 
 
 * `autoLand`: Automatically land(confirm) if there is no other candidates.
 * `minimumInputLength`: Search start only when input length exceeds this value.
-* `wordRegExp`: Used to build candidate word list.
+* `wordRegExp`: Used to build candidate word list. See [this](https://github.com/t9md/atom-lazy-motion/issues/3) for detail.
 * `showHoverIndicator`: Show hover indicator while searching.
+* `historySize`: Max length of history.
+* `saveHistoryOnCancel`: If false, canceled search won't saved to history.
 
 # Keymap
 

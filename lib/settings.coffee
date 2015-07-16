@@ -30,3 +30,4 @@ module.exports = new ConfigPlus 'lazy-motion',
     order:   5
     type:    'boolean'
     default: true
+    description: "If false, canceled search won't saved to history."
