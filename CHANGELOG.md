@@ -1,3 +1,7 @@
+## 0.1.10 - Search history support.
+- Search history #4.
+- Set cursor word as search.
+
 ## 0.1.9 - Refactoring
 - Cleanup code.
 - Change base style and add style change example in README.md.

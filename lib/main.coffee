@@ -2,65 +2,54 @@
 
 fuzzaldrin = require 'fuzzaldrin'
 _ = require 'underscore-plus'
+settings = require './settings'
 
 Match = null
 MatchList = null
 CandidateProvider = null
 HoverContainer = null
 
-Config =
-  autoLand:
-    order:   0
-    type:    'boolean'
-    default: false
-    description: "automatically land(confirm) if there is no other candidates"
-  minimumInputLength:
-    order:   1
-    type:    'integer'
-    minimum: 0
-    default: 0
-    description: "Search start only when input length exceeds this value"
-  wordRegExp:
-    order:   2
-    type:    'string'
-    default: '[@\\w-.():?]+'
-    description: "Used to build candidate List"
-  showHoverIndicator:
-    order:   3
-    type:    'boolean'
-    default: true
-
 module.exports =
   subscriptions: null
-  config: Config
+  config: settings.config
   container: null
+  historyManager: null
 
   activate: ->
     {Match, MatchList} = require './match'
     {HoverContainer}   = require './hover-indicator'
-    CandidateProvider  = require './candidate-provider'
+    CandidateProvider = require './candidate-provider'
+    @historyManager   = @getHistoryManager()
 
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
-      'lazy-motion:forward':  => @start 'forward'
-      'lazy-motion:backward': => @start 'backward'
+      'lazy-motion:forward':              => @start 'forward'
+      'lazy-motion:backward':             => @start 'backward'
+      'lazy-motion:forward-again':        => @start 'forward',  action: 'again'
+      'lazy-motion:backward-again':       => @start 'backward', action: 'again'
+      'lazy-motion:forward-cursor-word':  => @start 'forward',  action: 'cursorWord'
+      'lazy-motion:backward-cursor-word': => @start 'backward', action: 'cursorWord'
 
   deactivate: ->
     @ui?.destroy()
     @subscriptions.dispose()
+    @historyManager.destroy()
     @reset()
 
-  start: (@direction) ->
+  start: (@direction, options={}) ->
     ui = @getUI()
     unless ui.isVisible()
       @editor = @getEditor()
       @restoreEditorState = @saveEditorState @editor
       @matches = new MatchList()
       ui.focus()
+      switch options.action
+        when 'again'      then ui.setHistory 'prev'
+        when 'cursorWord' then ui.setCursorWord()
     else
       return if @matches.isEmpty()
       @matches.visit @direction
-      if atom.config.get('lazy-motion.showHoverIndicator')
+      if settings.get('showHoverIndicator')
         @showHover @matches.getCurrent()
       ui.showCounter()
 
@@ -80,14 +69,14 @@ module.exports =
       @container?.hide()
       return
 
-    if @matches.isOnly() and atom.config.get('lazy-motion.autoLand')
+    if @matches.isOnly() and settings.get('autoLand')
       @getUI().confirm()
       return
 
     @matchCursor ?= @getMatchForCursor()
     @matches.visit @direction, from: @matchCursor, redrawAll: true
 
-    if atom.config.get('lazy-motion.showHoverIndicator')
+    if settings.get('showHoverIndicator')
       @showHover @matches.getCurrent()
 
   showHover: (match) ->
@@ -114,6 +103,8 @@ module.exports =
     @reset()
 
   reset: ->
+    @historyManager.reset()
+
     @flashingTimeout    = null
     @restoreEditorState = null
 
@@ -139,7 +130,7 @@ module.exports =
 
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()
-    pattern = atom.config.get('lazy-motion.wordRegExp', {scope})
+    pattern = settings.get('wordRegExp', {scope})
 
     try
       new RegExp(pattern, 'g')
@@ -157,6 +148,32 @@ module.exports =
   # -------------------------
   getCount: ->
     @matches.getInfo()
+
+  getHistoryManager: ->
+    entries = []
+    index = -1
+
+    get: (direction) ->
+      if direction is 'prev'
+        index = (index + 1) % entries.length
+      else if direction is 'next'
+        index -= 1
+        index = (entries.length - 1) if index is -1
+      entries[index]
+
+    save: (text) ->
+      return if _.isEmpty(text)
+      entries.unshift text
+      entries = _.uniq entries # Eliminate duplicates
+      if entries.length > settings.get('historySize')
+        entries.pop()
+
+    reset: ->
+      index = -1
+
+    destroy: ->
+      entries = null
+      index = null
 
   # Utility
   # -------------------------

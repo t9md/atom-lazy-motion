@@ -14,6 +14,7 @@ Rapid cursor positioning with **fuzzy**, **lazy** search.
 * Differentiate color for top(blue) and bottom(red) entry of matches.
 * Highlight original cursor position while searching and flash current matching.
 * Flash screen if no match.
+* Support search history, and set cursor word as search text.
 
 # Why
 
@@ -42,7 +43,7 @@ But as for me this *label jump* system not work, I couldn't adapt to it.
 
 The reason is simple.  
 
-The *label jump* constrains me to enter label precisely which result in my focus(or zone or flow) lost.  
+The *label jump* constrains me to enter label precisely which result in my concentration(or zone or flow) lost.  
 
 Of course this *label jump* packages let me reach target position with minimum key typing.  
 But in my opinion, its only good for demonstration.
@@ -54,8 +55,17 @@ In real world coding, the **brain context switch** the *label jump* enforces is 
 ### atom-text-editor
 * `lazy-motion:forward`: Search forward.
 * `lazy-motion:backward`: Search backward.
-* `core:confirm`: confirm.
-* `core:cancel`:  cancel.
+* `lazy-motion:forward-again`: Search last word again.
+* `lazy-motion:backward-again`: Search last word again.
+* `lazy-motion:forward-cursor-word`: Search with cursor word.
+* `lazy-motion:backward-cursor-word`: Search with cursor word.
+
+### atom-text-editor.lazy-motion
+* `core:confirm`: Confirm.
+* `core:cancel`: Cancel.
+* `lazy-motion:set-history-next`: Set next histroy as search word.
+* `lazy-motion:set-history-prev`: Set previous histroy as search word.
+* `lazy-motion:set-cursor-word`: Set cursor word as search word.
 
 *NOTE: Search always wrap from end-to-top or top-to-end.*
 
@@ -97,15 +107,18 @@ You need to set your own keymap in `keymap.cson`.
 * My setting
 
 ```coffeescript
-'atom-text-editor.vim-mode.command-mode':
-  's': 'lazy-motion:forward'
+'atom-text-editor.vim-mode.command-mode, atom-text-editor.vim-mode.visual-mode':
+  's':           'lazy-motion:forward'
+  'ctrl-p':      'lazy-motion:forward-again'
 
-'.platform-darwin atom-text-editor.lazy-motion':
+'atom-text-editor.lazy-motion':
   'ctrl-u': 'editor:delete-to-beginning-of-line'
   ']':      'lazy-motion:forward'
   '[':      'lazy-motion:backward'
   ';':      'core:confirm'
-  'ctrl-g': 'core:cancel'
+  'ctrl-p': 'lazy-motion:set-history-prev'
+  'ctrl-n': 'lazy-motion:set-history-next'
+  'cmd-e':  'lazy-motion:set-cursor-word'
 ```
 
 # Change Style
@@ -169,6 +182,8 @@ See [Scoped Settings, Scopes and Scope Descriptors](https://atom.io/docs/latest/
 ```
 
 # TODO
+- [ ] Integrate to very similar my [isearch](https://atom.io/packages/isearch) package?
+- [] History support, inserting cursor word.
 - [x] Restore fold if canceled.
 - [x] Support language specific `wordRegExp` configuration.
 - [x] Show hover indicator to inform `current / total`.
