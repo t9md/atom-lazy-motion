@@ -83,6 +83,8 @@ In real world coding, the **brain context switch** the *label jump* enforces is 
 No keymap by default.  
 You need to set your own keymap in `keymap.cson`.
 
+## Nomal user
+
 ```coffeescript
 'atom-text-editor':
   'ctrl-s':     'lazy-motion:forward'
@@ -93,7 +95,7 @@ You need to set your own keymap in `keymap.cson`.
   '[': 'lazy-motion:backward'
 ```
 
-* Emacs user
+## Emacs user
 
 ```coffeescript
 'atom-text-editor':
@@ -106,7 +108,7 @@ You need to set your own keymap in `keymap.cson`.
   'ctrl-g': 'core:cancel'
 ```
 
-* My setting
+## My setting
 
 ```coffeescript
 'atom-text-editor.vim-mode.command-mode, atom-text-editor.vim-mode.visual-mode':
