@@ -69,19 +69,23 @@ class MatchList
   isOnly:     -> @entries.length is 1
   getCurrent: -> @entries[@index]
 
-  visit: (direction, options={}) ->
-    if options.from
-      @setIndex direction, options.from
+  visit: (direction, {from, redrawAll}={}) ->
+    if from
+      @setIndex direction, from
     else
       @updateIndex direction
-    @redraw {all: options.redrawAll}
+    @redraw {all: redrawAll}
 
-  setIndex: (direction, matchCursor)->
+  setIndex: (direction, matchCursor) ->
     @entries = _.sortBy @entries, (m) -> m.getScore()
     @index   = _.sortedIndex @entries, matchCursor, (m) -> m.getScore()
     # Adjusting @index here to adapt to modification by @updateIndex().
     @index -= 1 if direction is 'forward'
     @updateIndex direction
+
+    # If entry is containd in cursor position, we want next entry.
+    if @getCurrent().range.containsPoint(matchCursor.start) and not @isOnly()
+      @updateIndex direction
 
   updateIndex: (direction) ->
     if direction is 'forward'

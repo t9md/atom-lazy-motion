@@ -86,7 +86,8 @@ class UI extends HTMLElement
     # [NOTE] blur event happen on confirmed() in this case we shouldn't cancel
     return if @finishing
     @finishing = true
-    @main.historyManager.save @editor.getText()if settings.get('saveHistoryOnCancel')
+    if settings.get('saveHistoryOnCancel')
+      @main.historyManager.save @editor.getText()
     @main.cancel()
     @unFocus()
 

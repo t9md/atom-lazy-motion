@@ -1,3 +1,6 @@
+## 0.1.11 - Improve
+- If match is under cursor, get next entry #4.
+
 ## 0.1.10 - Search history support.
 - Search history #4.
 - Set cursor word as search.
