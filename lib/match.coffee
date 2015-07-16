@@ -94,8 +94,8 @@ class MatchList
       @index -= 1
       @index = (@entries.length - 1) if @index is -1
 
-  redraw: (options={}) ->
-    if options.all
+  redraw: ({all}={}) ->
+    if all
       [first, others..., last] = @entries
       @decorate others, 'lazy-motion-match'
       first.decorate 'lazy-motion-match top'

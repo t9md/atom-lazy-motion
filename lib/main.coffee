@@ -36,14 +36,14 @@ module.exports =
     @historyManager.destroy()
     @reset()
 
-  start: (@direction, options={}) ->
+  start: (@direction, {action}={}) ->
     ui = @getUI()
     unless ui.isVisible()
       @editor = @getEditor()
       @restoreEditorState = @saveEditorState @editor
       @matches = new MatchList()
       ui.focus()
-      switch options.action
+      switch action
         when 'again'      then ui.setHistory 'prev'
         when 'cursorWord' then ui.setCursorWord()
     else
