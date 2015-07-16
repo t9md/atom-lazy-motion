@@ -6,19 +6,14 @@ settings = require './settings'
 
 Match = null
 MatchList = null
-CandidateProvider = null
-HoverContainer = null
 
 module.exports =
   subscriptions: null
   config: settings.config
-  container: null
   historyManager: null
 
   activate: ->
     {Match, MatchList} = require './match'
-    {HoverContainer}   = require './hover-indicator'
-    CandidateProvider = require './candidate-provider'
     @historyManager   = @getHistoryManager()
 
     @subscriptions = new CompositeDisposable
@@ -49,24 +44,15 @@ module.exports =
     else
       return if @matches.isEmpty()
       @matches.visit @direction
-      if settings.get('showHoverIndicator')
-        @showHover @matches.getCurrent()
       ui.showCounter()
-
-  getCandidates: ->
-    @candidateProvider ?= new CandidateProvider(@editor, @getWordPattern())
-    @candidateProvider.getCandidates()
 
   search: (text) ->
     @matches.reset()
-    unless text
-      @container?.hide()
-      return
+    return unless text
 
     @matches.replace fuzzaldrin.filter(@getCandidates(), text, key: 'matchText')
     if @matches.isEmpty()
       @debouncedFlashScreen()
-      @container?.hide()
       return
 
     if @matches.isOnly() and settings.get('autoLand')
@@ -76,12 +62,24 @@ module.exports =
     @matchCursor ?= @getMatchForCursor()
     @matches.visit @direction, from: @matchCursor, redrawAll: true
 
-    if settings.get('showHoverIndicator')
-      @showHover @matches.getCurrent()
+  getCandidates: ->
+    @candidateProvider ?= @getCandidateProvider(@editor, @getWordPattern())
+    @candidateProvider.get()
 
-  showHover: (match) ->
-    @container ?= new HoverContainer().initialize(@editor)
-    @container.show match, @getCount()
+  getCandidateProvider: (editor, pattern) ->
+    matches = null
+
+    get: ->
+      return matches if matches
+      matches = []
+      editor.scan pattern, ({range, matchText}) =>
+        matches.push new Match(editor, {range, matchText})
+      matches
+
+    destroy: ->
+      for match in matches
+        match.destroy()
+      matches = null
 
   getMatchForCursor: ->
     start = @editor.getCursorBufferPosition()
@@ -113,9 +111,6 @@ module.exports =
 
     @candidateProvider?.destroy()
     @candidateProvider = null
-
-    @container?.destroy()
-    @container = null
 
     @matches?.destroy()
     @matches = null

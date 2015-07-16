@@ -1,3 +1,6 @@
+## 0.1.12 - [PRE] Improve
+- Refactoring.
+
 ## 0.1.11 - Improve
 - If match is under cursor, get next entry #4.
 
