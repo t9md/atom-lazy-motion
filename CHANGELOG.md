@@ -1,5 +1,6 @@
-## 0.1.12 - [PRE] Improve
+## 0.1.12 - Improve
 - Refactoring.
+- FIX historyManager, get 'next' was not return correct entry.
 
 ## 0.1.11 - Improve
 - If match is under cursor, get next entry #4.

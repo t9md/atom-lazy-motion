@@ -1,4 +1,4 @@
-{CompositeDisposable, Range, TextEditor} = require 'atom'
+{CompositeDisposable, Range} = require 'atom'
 
 fuzzaldrin = require 'fuzzaldrin'
 _ = require 'underscore-plus'
@@ -37,10 +37,10 @@ module.exports =
       @editor = @getEditor()
       @restoreEditorState = @saveEditorState @editor
       @matches = new MatchList()
-      ui.focus()
       switch action
         when 'again'      then ui.setHistory 'prev'
         when 'cursorWord' then ui.setCursorWord()
+      ui.focus()
     else
       return if @matches.isEmpty()
       @matches.visit @direction
@@ -153,15 +153,15 @@ module.exports =
         index = (index + 1) % entries.length
       else if direction is 'next'
         index -= 1
-        index = (entries.length - 1) if index is -1
+        index = (entries.length - 1) if index < 0
       entries[index]
 
-    save: (text) ->
-      return if _.isEmpty(text)
-      entries.unshift text
+    save: (entry) ->
+      return if _.isEmpty(entry)
+      entries.unshift entry
       entries = _.uniq entries # Eliminate duplicates
       if entries.length > settings.get('historySize')
-        entries.pop()
+        entries.splice settings.get('historySize')
 
     reset: ->
       index = -1
