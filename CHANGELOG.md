@@ -1,3 +1,7 @@
+## 0.1.13 - Improve
+- Now hover indicator follow scroll. Useful when quickly visit, scroll then cancel.
+  Until this improvement hover sticked absolute pixel position and disturbed your sight.
+  
 ## 0.1.12 - Improve
 - Update readme to follow vim-mode's rename from command-mode to normal-mode
 - Refactoring.

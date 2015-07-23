@@ -1,11 +1,22 @@
+{CompositeDisposable} = require 'atom'
+
 class Hover extends HTMLElement
   createdCallback: ->
     @classList.add 'lazy-motion-hover'
-    @style.marginLeft   = '5px'
-    @style.marginTop    = '-20px'
     @style.paddingLeft  = '0.2em'
     @style.paddingRight = '0.2em'
+    @style.marginLeft   = '5px'
     this
+
+  setPixelPosition: (editor, point) ->
+    editorView  = atom.views.getView(editor)
+    px          = editorView.pixelPositionForBufferPosition point
+    top         = px.top  - editor.getScrollTop()
+    left        = px.left - editor.getScrollLeft()
+    @style.top  = top  + 'px'
+    @style.left = left + 'px'
+    
+    @style.marginTop = if top <= 10 then '0px' else '-20px'
 
   show: ({editor, match, counter}) ->
     @classList.remove 'top'
@@ -13,18 +24,18 @@ class Hover extends HTMLElement
     @classList.add 'top'    if match.isTop()
     @classList.add 'bottom' if match.isBottom()
 
-    editorView       = atom.views.getView(editor)
-    px               = editorView.pixelPositionForBufferPosition match.end
-    top              = px.top  - editor.getScrollTop()
-    left             = px.left - editor.getScrollLeft()
-    @style.top       = top  + 'px'
-    @style.left      = left + 'px'
-    @style.marginTop = '0px' if top <= 0
+    @setPixelPosition(editor, match.end)
+    @subscriptions = new CompositeDisposable
+
+    updateHover = => @setPixelPosition(editor, match.end)
+    @subscriptions.add editor.onDidChangeScrollTop(updateHover)
+    @subscriptions.add editor.onDidChangeScrollLeft(updateHover)
 
     {current, total} = counter
     @textContent = "#{current}/#{total}"
 
   destroy: ->
+    @subscriptions.dispose()
     @remove()
 
 class Container extends HTMLElement
