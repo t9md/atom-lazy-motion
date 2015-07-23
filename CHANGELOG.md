@@ -1,4 +1,5 @@
 ## 0.1.12 - Improve
+- Update readme to follow vim-mode's rename from command-mode to normal-mode
 - Refactoring.
 - FIX historyManager, get 'next' was not return correct entry.
 

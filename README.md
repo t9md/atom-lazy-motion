@@ -111,7 +111,7 @@ You need to set your own keymap in `keymap.cson`.
 ## My setting
 
 ```coffeescript
-'atom-text-editor.vim-mode.command-mode, atom-text-editor.vim-mode.visual-mode':
+'atom-text-editor.vim-mode.normal-mode, atom-text-editor.vim-mode.visual-mode':
   's':           'lazy-motion:forward'
   'ctrl-p':      'lazy-motion:forward-again'
 
