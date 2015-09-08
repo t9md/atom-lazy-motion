@@ -31,21 +31,26 @@ atom-text-editor::shadow {
   .lazy-motion-cursor .region {
     background-color: @syntax-cursor-color;
   }
-  .lazy-motion-hover {
-    z-index: 2147483647;
-    position: absolute;
-    color: @text-color-highlight;
-    background-color: @base-background-color;
-    border-radius: @component-border-radius;
-    box-shadow: 0 0 10px @syntax-text-color;
-    &.top {
-      background-color: @background-color-info;
-    }
-    &.bottom {
-      background-color: @background-color-error;
-    }
+}
+
+.lazy-motion-hover {
+  color: @text-color-highlight;
+  background-color: @base-background-color;
+  border-radius: @component-border-radius;
+  box-shadow: 0 0 10px @syntax-text-color;
+  margin-top: -2.5em;
+  padding-left: 0.2em;
+  padding-right: 0.2em;
+  margin-left: -0.1em;
+  text-align: center;
+  &.top {
+    background-color: @background-color-info;
+  }
+  &.bottom {
+    background-color: @background-color-error;
   }
 }
+
 .lazy-motion-ui {
   .editor-container {
     padding: @component-padding/4 @component-padding;

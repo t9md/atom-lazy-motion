@@ -1,6 +1,6 @@
 {CompositeDisposable} = require 'atom'
 settings = require './settings'
-{HoverContainer}  = require './hover-indicator'
+Hover = require './hover'
 
 class UI extends HTMLElement
   createdCallback: ->
@@ -47,7 +47,7 @@ class UI extends HTMLElement
         @main.search text
       @showCounter()
 
-    subs.add @editor.onDidDestroy =>
+    subs.add @editor.onDidDestroy ->
       subs.dispose()
 
   showCounter: ->
@@ -57,10 +57,12 @@ class UI extends HTMLElement
     @counterContainer.textContent = "Lazy Motion: #{content}"
 
     if settings.get('showHoverIndicator')
-      @hoverContainer ?= new HoverContainer().initialize(@main.editor)
-      @hoverContainer.hide()
+      @hover?.destroy()
       if total isnt 0
-        @hoverContainer.show @main.matches.getCurrent(), count
+        @hover = new Hover()
+        currentMatch = @main.matches.getCurrent()
+        content = "#{current}/#{total}"
+        @hover.show @main.editor, currentMatch, content
 
   setHistory: (direction) ->
     if entry = @main.historyManager.get(direction)
@@ -79,8 +81,8 @@ class UI extends HTMLElement
 
   unFocus: ->
     @editor.setText ''
-    @hoverContainer?.destroy()
-    @hoverContainer = null
+    @hover?.destroy()
+    @hover = null
     @panel.hide()
     atom.workspace.getActivePane().activate()
     @finishing = false
