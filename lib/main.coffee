@@ -1,8 +1,7 @@
 {CompositeDisposable, Range} = require 'atom'
-
 _ = require 'underscore-plus'
 settings = require './settings'
-{Match, MatchList} = require './match'
+{MatchList} = require './match'
 
 module.exports =
   subscriptions: null
@@ -60,6 +59,7 @@ module.exports =
       return
 
     match = @matches.get()
+    @matches.refresh()
     match.visit()
 
   cancel: ->

@@ -13,15 +13,17 @@ atom-text-editor::shadow {
   .lazy-motion-match .region {
     .lazy-motion.round-box;
     background-color: transparent;
-    border: 2px solid @syntax-result-marker-color;
+    border: 1px solid @syntax-result-marker-color;
   }
-  .lazy-motion-match.top .region {
-    border: 2px solid @syntax-color-renamed;
+  .lazy-motion-match.first .region {
+    border-color: @syntax-color-renamed;
   }
-  .lazy-motion-match.bottom .region {
-    border: 2px solid @syntax-color-removed;
+  .lazy-motion-match.last .region {
+    border-color: @syntax-color-removed;
   }
   .lazy-motion-match.current .region {
+    border-width: 2px;
+    border-style: solid;
     background-color: @syntax-selection-color;
   }
   .lazy-motion-flash .region {
@@ -53,7 +55,7 @@ atom-text-editor::shadow {
 
 .lazy-motion-ui {
   &.divide {
-    background-color: fadeout(@background-color-error, 40%);
+    background-color: fadeout(@background-color-info, 40%);
   }
   .editor-container {
     padding: @component-padding/4 @component-padding;
