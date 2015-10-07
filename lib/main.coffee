@@ -1,11 +1,8 @@
 {CompositeDisposable, Range} = require 'atom'
 
-fuzzaldrin = require 'fuzzaldrin'
 _ = require 'underscore-plus'
 settings = require './settings'
-
-Match = null
-MatchList = null
+{Match, MatchList} = require './match'
 
 module.exports =
   subscriptions: null
@@ -13,87 +10,64 @@ module.exports =
   historyManager: null
 
   activate: ->
-    {Match, MatchList} = require './match'
     @historyManager   = @getHistoryManager()
 
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
-      'lazy-motion:forward':              => @start 'forward'
-      'lazy-motion:backward':             => @start 'backward'
-      'lazy-motion:forward-again':        => @start 'forward',  action: 'again'
-      'lazy-motion:backward-again':       => @start 'backward', action: 'again'
-      'lazy-motion:forward-cursor-word':  => @start 'forward',  action: 'cursorWord'
-      'lazy-motion:backward-cursor-word': => @start 'backward', action: 'cursorWord'
+      'lazy-motion:forward': => @start 'next'
+      'lazy-motion:backward': => @start 'prev'
+      'lazy-motion:forward-again': => @start 'next', action: 'again'
+      'lazy-motion:backward-again': => @start 'prev', action: 'again'
+      'lazy-motion:forward-cursor-word': => @start 'next', action: 'cursorWord'
+      'lazy-motion:backward-cursor-word': => @start 'prev', action: 'cursorWord'
 
   deactivate: ->
     @ui?.destroy()
     @subscriptions.dispose()
     @historyManager.destroy()
+    {@historyManager, @ui, @subscriptions} = {}
     @reset()
 
   start: (@direction, {action}={}) ->
     ui = @getUI()
     unless ui.isVisible()
-      @editor = @getEditor()
+      @editor = atom.workspace.getActiveTextEditor()
       @restoreEditorState = @saveEditorState @editor
-      @matches = new MatchList()
+      @matches = new MatchList(@editor, @getWordPattern())
       switch action
         when 'again'      then ui.setHistory 'prev'
         when 'cursorWord' then ui.setCursorWord()
       ui.focus()
     else
       return if @matches.isEmpty()
-      @matches.visit @direction
+      match = @matches.get(@direction)
+      @matches.refresh()
+      match.visit()
       ui.showCounter()
 
   search: (text) ->
     @matches.reset()
     return unless text
-
-    @matches.replace fuzzaldrin.filter(@getCandidates(), text, key: 'matchText')
+    @matches.filter(text)
     if @matches.isEmpty()
       @debouncedFlashScreen()
+      @ui.hover?.reset()
       return
 
     if @matches.isOnly() and settings.get('autoLand')
       @getUI().confirm()
       return
 
-    @matchCursor ?= @getMatchForCursor()
-    @matches.visit @direction, from: @matchCursor, redrawAll: true
-
-  getCandidates: ->
-    @candidateProvider ?= @getCandidateProvider(@editor, @getWordPattern())
-    @candidateProvider.get()
-
-  getCandidateProvider: (editor, pattern) ->
-    matches = null
-
-    get: ->
-      return matches if matches
-      matches = []
-      editor.scan pattern, ({range, matchText}) =>
-        matches.push new Match(editor, {range, matchText})
-      matches
-
-    destroy: ->
-      for match in matches
-        match.destroy()
-      matches = null
-
-  getMatchForCursor: ->
-    start = @editor.getCursorBufferPosition()
-    end = start.translate([0, 1])
-    match = new Match(@editor, range: new Range(start, end))
-    match.decorate 'lazy-motion-cursor'
-    match
+    match = @matches.get()
+    match.visit()
 
   cancel: ->
     @restoreEditorState()
     @reset()
 
   land: ->
-    point = @matches.getCurrent().start
+    point = @matches.get().range.start
+    console.log point.toString()
     if @editor.getLastSelection().isEmpty()
       @editor.setCursorBufferPosition point
     else
@@ -102,26 +76,16 @@ module.exports =
 
   reset: ->
     @historyManager.reset()
-
-    @flashingTimeout    = null
-    @restoreEditorState = null
-
     @matchCursor?.destroy()
-    @matchCursor = null
-
-    @candidateProvider?.destroy()
-    @candidateProvider = null
-
     @matches?.destroy()
-    @matches = null
-
-    @direction = null
+    {
+      @flashingTimeout, @restoreEditorState, @matchCursor,
+      @matches, @direction,
+    } = {}
 
   getUI: ->
-    @ui ?= (
-      ui = new (require './ui')
-      ui.initialize this
-      ui)
+    @ui ?= (new (require './ui')).initialize(this)
+    @ui
 
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()
@@ -172,13 +136,10 @@ module.exports =
 
   # Utility
   # -------------------------
-  getEditor: ->
-    atom.workspace.getActiveTextEditor()
-
   # Return function to restore editor state.
   saveEditorState: (editor) ->
     scrollTop = editor.getScrollTop()
-    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) =>
+    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) ->
       editor.displayBuffer.foldForMarker(m).getStartRow()
     ->
       for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)

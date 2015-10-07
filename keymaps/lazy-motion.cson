@@ -1,0 +1,3 @@
+'atom-text-editor.lazy-motion':
+  'tab':       'lazy-motion:forward'
+  'shift-tab': 'lazy-motion:backward'

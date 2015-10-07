@@ -8,6 +8,7 @@ class UI extends HTMLElement
 
     @editorContainer = document.createElement 'div'
     @editorContainer.className = 'editor-container'
+
     @counterContainer = document.createElement 'div'
     @counterContainer.className = 'counter'
 
@@ -57,10 +58,9 @@ class UI extends HTMLElement
     @counterContainer.textContent = "Lazy Motion: #{content}"
 
     if settings.get('showHoverIndicator')
-      @hover?.destroy()
+      @hover ?= new Hover()
       if total isnt 0
-        @hover = new Hover()
-        currentMatch = @main.matches.getCurrent()
+        currentMatch = @main.matches.get()
         content = "#{current}/#{total}"
         @hover.show @main.editor, currentMatch, content
 
@@ -80,9 +80,8 @@ class UI extends HTMLElement
     @showCounter()
 
   unFocus: ->
+    @hover?.reset()
     @editor.setText ''
-    @hover?.destroy()
-    @hover = null
     @panel.hide()
     atom.workspace.getActivePane().activate()
     @finishing = false
@@ -107,9 +106,11 @@ class UI extends HTMLElement
     @panel.isVisible()
 
   destroy: ->
+    @hover?.destroy()
     @panel.destroy()
     @editor.destroy()
     @subscriptions.dispose()
+    {@hover, @panel, @editor, @subscriptions} = {}
     @remove()
 
 module.exports =
