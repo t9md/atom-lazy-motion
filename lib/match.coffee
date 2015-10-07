@@ -30,7 +30,7 @@ class MatchList
 
   divide: (matches) ->
     divided = []
-    @divideInitialPoint = @get().range.start
+    @divideInitialPoint = @get().range.start.translate([0, -1])
     for m in matches
       @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
         divided.push new Match(@editor, {range, matchText})
