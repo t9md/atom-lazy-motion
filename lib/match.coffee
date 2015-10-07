@@ -29,17 +29,22 @@ class MatchList
     matches
 
   divide: (matches) ->
-    devided = []
+    divided = []
+    @divideInitialPoint = @get().range.start
     for m in matches
       @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
-        devided.push new Match(@editor, {range, matchText})
-    devided
+        divided.push new Match(@editor, {range, matchText})
+    divided
 
   filter: (text, {mode}) ->
-    tokens =
-      switch mode
-        when 'normal' then @tokens ?= @getTokens()
-        when 'divide' then @tokensDivided ?= @divide(@matches)
+    switch mode
+      when 'normal'
+        tokens = @tokens ?= @getTokens()
+        point = @editor.getCursorBufferPosition()
+      when 'divide'
+        tokens = @tokensDivided ?= @divide(@matches)
+        point = @divideInitialPoint
+
     @reset()
     matches = []
     for text in text.trim().split(/\s+/)
@@ -52,7 +57,6 @@ class MatchList
 
     @matches = _.sortBy matches, (m) -> m.getScore()
     return unless matches.length
-    point = @editor.getCursorBufferPosition()
     index = 0
     for m, i in @matches when m.range.start.isGreaterThan(point)
       index = i
