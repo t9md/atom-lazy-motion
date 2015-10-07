@@ -52,6 +52,9 @@ atom-text-editor::shadow {
 }
 
 .lazy-motion-ui {
+  &.divide {
+    background-color: fadeout(@background-color-error, 40%);
+  }
   .editor-container {
     padding: @component-padding/4 @component-padding;
   }
@@ -60,4 +63,21 @@ atom-text-editor::shadow {
     font-size: 1.3em;
     color: @text-color;
   }
+  // .atom-text-editor.lazy-motion':
 }
+
+// // Highlight matched text
+// .project-folder .list-group {
+//   .character-match {
+//     color: @text-color-highlight;
+//     font-weight: bold;
+//   }
+// }
+// .list-group li.selected {
+//   .project-folder.remove & {
+//     background-color: fadeout(@background-color-error, 40%);
+//   }
+//   .project-folder.add & {
+//     background-color: fadeout(@background-color-info, 40%);
+//   }
+// }

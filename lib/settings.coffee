@@ -15,7 +15,7 @@ module.exports = new ConfigPlus 'lazy-motion',
   wordRegExp:
     order:   2
     type:    'string'
-    default: '[@\\w-.():?]+'
+    default: '[@\\w-.():?]+|='
     description: "Used to build candidate List"
   showHoverIndicator:
     order:   3

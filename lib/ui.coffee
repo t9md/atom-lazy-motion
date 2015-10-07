@@ -24,6 +24,7 @@ class UI extends HTMLElement
     @panel = atom.workspace.addBottomPanel item: this, visible: false
 
   initialize: (@main) ->
+    @setMode('normal')
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
       'core:confirm': => @confirm()
@@ -31,6 +32,10 @@ class UI extends HTMLElement
       'click':        => @cancel()
       'blur':         => @cancel()
 
+      'lazy-motion:cancel': => @cancel()
+      'lazy-motion:land-to-start': => @confirm()
+      'lazy-motion:land-to-end': => @confirm('end')
+      'lazy-motion:divide': => @toggleDivide()
       'lazy-motion:set-history-next': => @setHistory('next')
       'lazy-motion:set-history-prev': => @setHistory('prev')
       'lazy-motion:set-cursor-word':  => @setCursorWord()
@@ -74,6 +79,32 @@ class UI extends HTMLElement
     # Instead use lazy-motion.wordRegExp setting.
     @editor.setText @main.editor.getWordUnderCursor({wordRegex})
 
+  isMode: (mode) ->
+    @mode is mode
+
+  getMode: -> @mode
+
+  toggleDivide: ->
+    mode = if @isMode('divide') then 'normal' else 'divide'
+    @setMode(mode)
+
+  setMode: (mode) ->
+    oldMode = @getMode()
+    if mode is 'divide' and @main.matches.isEmpty()
+      return
+    @mode = mode
+    @classList.remove oldMode
+    @classList.add mode
+
+    switch mode
+      when 'normal'
+        if oldMode is 'divide' and @normalModeText
+          @editor.setText @normalModeText
+          @normalModeText = null
+      when 'divide'
+        @normalModeText = @editor.getText()
+        @editor.setText ''
+
   focus: ->
     @panel.show()
     @editorElement.focus()
@@ -82,15 +113,17 @@ class UI extends HTMLElement
   unFocus: ->
     @hover?.reset()
     @editor.setText ''
+    @normalModeText = null
     @panel.hide()
+    @setMode('normal')
     atom.workspace.getActivePane().activate()
     @finishing = false
 
-  confirm: ->
+  confirm: (where) ->
     return if @main.matches.isEmpty()
     @finishing = true
     @main.historyManager.save @editor.getText()
-    @main.land()
+    @main.land(where)
     @unFocus()
 
   cancel: ->

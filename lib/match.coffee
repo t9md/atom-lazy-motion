@@ -6,10 +6,11 @@ class MatchList
   candidateProvider: null
 
   constructor: (@editor, @pattern) ->
-    @index    = -1
-    @tokens   = []
-    @matches = null
-    @lastMatch = null
+    @index         = -1
+    @tokens        = null
+    @tokensDivided = null
+    @matches       = null
+    @lastMatch     = null
     @subscriptions = new CompositeDisposable
     @subscriptions.add @editor.onDidChangeScrollTop => @refresh()
     @subscriptions.add @editor.onDidChangeScrollLeft => @refresh()
@@ -27,10 +28,28 @@ class MatchList
       matches.push new Match(@editor, {range, matchText})
     matches
 
-  filter: (text) ->
+  divide: (matches) ->
+    devided = []
+    for m in matches
+      @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
+        devided.push new Match(@editor, {range, matchText})
+    devided
+
+  filter: (text, {mode}) ->
+    tokens =
+      switch mode
+        when 'normal' then @tokens ?= @getTokens()
+        when 'divide' then @tokensDivided ?= @divide(@matches)
     @reset()
-    @tokens = @getTokens() if @isEmpty()
-    matches = fuzzaldrin.filter(@tokens, text, key: 'matchText')
+    matches = []
+    for text in text.trim().split(/\s+/)
+      found = fuzzaldrin.filter(tokens, text, key: 'matchText')
+      matches =
+        if matches.length is 0
+          found
+        else
+          (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
+
     @matches = _.sortBy matches, (m) -> m.getScore()
     return unless matches.length
     point = @editor.getCursorBufferPosition()
@@ -89,8 +108,10 @@ class MatchList
 
   destroy: ->
     @reset()
+    m.destroy() for m in @tokens ? []
+    m.destroy() for m in @tokensDivided ? []
     @subscriptions.dispose()
-    {@index, @tokens, @matches, @subscriptions} = {}
+    {@index, @tokens, @tokensDivided, @matches, @subscriptions} = {}
 
 class Match
   constructor: (@editor, {@range, @matchText}) ->
@@ -103,6 +124,10 @@ class Match
       last     and 'last',
       @current and 'current'
     ].filter (e) -> e
+
+  isFollowing: (other) ->
+    return false if @range.start.row isnt other.range.start.row
+    @range.start.isGreaterThan(other.range.start)
 
   isFirst: -> @first
   isLast: -> @last

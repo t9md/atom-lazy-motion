@@ -47,8 +47,9 @@ module.exports =
 
   search: (text) ->
     @matches.reset()
-    return unless text
-    @matches.filter(text)
+    if (@getUI().isMode('normal') and not text)
+      return
+    @matches.filter(text, mode: @getUI().getMode())
     if @matches.isEmpty()
       @debouncedFlashScreen()
       @ui.hover?.reset()
@@ -65,11 +66,10 @@ module.exports =
     @restoreEditorState()
     @reset()
 
-  land: ->
-    point = @matches.get().range.start
-    console.log point.toString()
+  land: (where="start") ->
+    point = @matches.get().range[where]
     if @editor.getLastSelection().isEmpty()
-      @editor.setCursorBufferPosition point
+      @editor.setCursorBufferPosition(point)
     else
       @editor.selectToBufferPosition point
     @reset()
