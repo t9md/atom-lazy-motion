@@ -1,4 +1,4 @@
-{CompositeDisposable} = require 'atom'
+{Emitter, CompositeDisposable} = require 'atom'
 settings = require './settings'
 Hover = require './hover'
 
@@ -24,6 +24,7 @@ class UI extends HTMLElement
     @panel = atom.workspace.addBottomPanel item: this, visible: false
 
   initialize: (@main) ->
+    @emitter = new Emitter
     @setMode('normal')
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
@@ -43,18 +44,19 @@ class UI extends HTMLElement
     @handleInput()
     this
 
-  handleInput: ->
-    @subscriptions = subs = new CompositeDisposable
+  onDidChange:  (fn) -> @emitter.on 'did-change', fn
+  onDidConfirm: (fn) -> @emitter.on 'did-confirm', fn
+  onDidCancel:  (fn) -> @emitter.on 'did-cancel', fn
+  onDidUnfocus: (fn) -> @emitter.on 'did-unfocus', fn
+  onDidCommand: (fn) -> @emitter.on 'did-command', fn
 
-    subs.add @editor.onDidChange =>
+  handleInput: ->
+    @editor.onDidChange =>
       return if @finishing
       text = @editor.getText()
       if text.length >= settings.get('minimumInputLength')
-        @main.search text
+        @emitter.emit 'did-change', {text}
       @showCounter()
-
-    subs.add @editor.onDidDestroy ->
-      subs.dispose()
 
   showCounter: ->
     count = @main.getCount()
@@ -69,15 +71,18 @@ class UI extends HTMLElement
         content = "#{current}/#{total}"
         @hover.show @main.editor, currentMatch, content
 
+  setText: (text) ->
+    @editor.setText text
+
   setHistory: (direction) ->
     if entry = @main.historyManager.get(direction)
-      @editor.setText entry
+      @setText entry
 
   setCursorWord: ->
     wordRegex = @main.getWordPattern()
     # [NOTE] We shouldn't simply use cursor::wordRegExp().
     # Instead use lazy-motion.wordRegExp setting.
-    @editor.setText @main.editor.getWordUnderCursor({wordRegex})
+    @setText @main.editor.getWordUnderCursor({wordRegex})
 
   isMode: (mode) ->
     @mode is mode
@@ -99,7 +104,7 @@ class UI extends HTMLElement
     switch mode
       when 'normal'
         if oldMode is 'divide' and @normalModeText
-          @editor.setText @normalModeText
+          @setText @normalModeText
           @normalModeText = null
       when 'divide'
         @normalModeText = @editor.getText()
@@ -112,7 +117,7 @@ class UI extends HTMLElement
 
   unFocus: ->
     @hover?.reset()
-    @editor.setText ''
+    @setText ''
     @normalModeText = null
     @panel.hide()
     @setMode('normal')
@@ -120,30 +125,29 @@ class UI extends HTMLElement
     @finishing = false
 
   confirm: (where) ->
-    return if @main.matches.isEmpty()
     @finishing = true
-    @main.historyManager.save @editor.getText()
-    @main.land(where)
+    event = {text: @editor.getText(), where}
+    @emitter.emit 'did-confirm', event
     @unFocus()
 
   cancel: ->
     # [NOTE] blur event happen on confirmed() in this case we shouldn't cancel
     return if @finishing
     @finishing = true
-    if settings.get('saveHistoryOnCancel')
-      @main.historyManager.save @editor.getText()
-    @main.cancel()
+    event = {text: @editor.getText()}
+    @emitter.emit 'did-cancel', event
     @unFocus()
 
   isVisible: ->
     @panel.isVisible()
 
   destroy: ->
+    @emitter.dispose()
     @hover?.destroy()
     @panel.destroy()
     @editor.destroy()
     @subscriptions.dispose()
-    {@hover, @panel, @editor, @subscriptions} = {}
+    {@emitter, @hover, @panel, @editor, @subscriptions} = {}
     @remove()
 
 module.exports =

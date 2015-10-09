@@ -2,6 +2,7 @@
 _ = require 'underscore-plus'
 settings = require './settings'
 {MatchList} = require './match'
+UI = require './ui'
 
 module.exports =
   subscriptions: null
@@ -9,7 +10,10 @@ module.exports =
   historyManager: null
 
   activate: ->
-    @historyManager   = @getHistoryManager()
+    @ui = new UI
+    @ui.initialize(this)
+    @historyManager = @getHistoryManager()
+    @observeUI()
 
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
@@ -20,6 +24,20 @@ module.exports =
       'lazy-motion:forward-cursor-word': => @start 'next', action: 'cursorWord'
       'lazy-motion:backward-cursor-word': => @start 'prev', action: 'cursorWord'
 
+  observeUI: ->
+    @ui.onDidChange ({text}) =>
+      console.log text
+      @search text
+
+    @ui.onDidConfirm ({text, where}) =>
+      @historyManager.save text
+      @land(where)
+
+    @ui.onDidCancel ({text}) =>
+      if settings.get('saveHistoryOnCancel')
+        @historyManager.save text
+      @cancel()
+
   deactivate: ->
     @ui?.destroy()
     @subscriptions.dispose()
@@ -28,34 +46,33 @@ module.exports =
     @reset()
 
   start: (@direction, {action}={}) ->
-    ui = @getUI()
-    unless ui.isVisible()
+    unless @ui.isVisible()
       @editor = atom.workspace.getActiveTextEditor()
       @restoreEditorState = @saveEditorState @editor
       @matches = new MatchList(@editor, @getWordPattern())
       switch action
-        when 'again'      then ui.setHistory 'prev'
-        when 'cursorWord' then ui.setCursorWord()
-      ui.focus()
+        when 'again'      then @ui.setHistory 'prev'
+        when 'cursorWord' then @ui.setCursorWord()
+      @ui.focus()
     else
       return if @matches.isEmpty()
       match = @matches.get(@direction)
       @matches.refresh()
       match.visit()
-      ui.showCounter()
+      @ui.showCounter()
 
   search: (text) ->
     @matches.reset()
-    if (@getUI().isMode('normal') and not text)
+    if (@ui.isMode('normal') and not text)
       return
-    @matches.filter(text, mode: @getUI().getMode())
+    @matches.filter(text, mode: @ui.getMode())
     if @matches.isEmpty()
       @debouncedFlashScreen()
       @ui.hover?.reset()
       return
 
     if @matches.isOnly() and settings.get('autoLand')
-      @getUI().confirm()
+      @ui.confirm()
       return
 
     match = @matches.get()
@@ -83,10 +100,6 @@ module.exports =
       @matches, @direction,
     } = {}
 
-  getUI: ->
-    @ui ?= (new (require './ui')).initialize(this)
-    @ui
-
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()
     pattern = settings.get('wordRegExp', {scope})
@@ -101,7 +114,7 @@ module.exports =
       atom.notifications.addWarning content, dismissable: true
     finally
       if error
-        @getUI().cancel()
+        @ui.cancel()
 
   # Accessed from UI
   # -------------------------

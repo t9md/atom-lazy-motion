@@ -99,7 +99,7 @@ class MatchList
     if (index >= 0) then index else (list.length + index)
 
   get: (direction=null) ->
-    console.log arguments.callee.caller
+    # console.log arguments.callee.caller
     # console.log direction
     @matches[@index].current = false
     switch direction
