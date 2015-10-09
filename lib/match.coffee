@@ -36,6 +36,15 @@ class MatchList
         divided.push new Match(@editor, {range, matchText})
     divided
 
+  narrow: (text, matches) ->
+    # @narrowInitialPoint = @get().range.start.translate([0, -1])
+    narrowed = []
+    pattern = _.escapeRegExp(text)
+    for m in matches
+      @editor.scanInBufferRange ///#{pattern}///gi, m.range, ({range, matchText}) =>
+        narrowed.push new Match(@editor, {range, matchText})
+    narrowed
+
   filter: (text, {mode}) ->
     switch mode
       when 'normal'
@@ -48,12 +57,13 @@ class MatchList
     @reset()
     matches = []
     for text in text.trim().split(/\s+/)
-      found = fuzzaldrin.filter(tokens, text, key: 'matchText')
       matches =
         if matches.length is 0
-          found
+          fuzzaldrin.filter(tokens, text, key: 'matchText')
         else
-          (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
+          @narrow(text, matches)
+          # found = fuzzaldrin.filter(tokens, text, key: 'matchText')
+          # (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
 
     @matches = _.sortBy matches, (m) -> m.getScore()
     return unless matches.length
@@ -89,6 +99,8 @@ class MatchList
     if (index >= 0) then index else (list.length + index)
 
   get: (direction=null) ->
+    console.log arguments.callee.caller
+    # console.log direction
     @matches[@index].current = false
     switch direction
       when 'next' then @setIndex(@index + 1)
