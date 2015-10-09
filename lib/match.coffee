@@ -78,6 +78,10 @@ class MatchList
     last?.last = true
     @show()
 
+  visit: (direction) ->
+    @refresh()
+    @get(direction).visit()
+
   refresh: ->
     @reset()
     @show()

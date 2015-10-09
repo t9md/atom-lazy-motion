@@ -1,4 +1,5 @@
 {CompositeDisposable, Range} = require 'atom'
+Hover = require './hover'
 _ = require 'underscore-plus'
 settings = require './settings'
 {MatchList} = require './match'
@@ -26,8 +27,8 @@ module.exports =
 
   observeUI: ->
     @ui.onDidChange ({text}) =>
-      console.log text
       @search text
+      @updateCounter()
 
     @ui.onDidConfirm ({text, where}) =>
       @historyManager.save text
@@ -37,6 +38,8 @@ module.exports =
       if settings.get('saveHistoryOnCancel')
         @historyManager.save text
       @cancel()
+
+    @ui.onDidCommand (command) => @handleCommand(command)
 
   deactivate: ->
     @ui?.destroy()
@@ -51,15 +54,34 @@ module.exports =
       @restoreEditorState = @saveEditorState @editor
       @matches = new MatchList(@editor, @getWordPattern())
       switch action
-        when 'again'      then @ui.setHistory 'prev'
-        when 'cursorWord' then @ui.setCursorWord()
+        when 'again' then @handleCommand('set-history-prev')
+        when 'cursorWord' then @handleCommand('set-cursor-word')
       @ui.focus()
     else
       return if @matches.isEmpty()
-      match = @matches.get(@direction)
-      @matches.refresh()
-      match.visit()
-      @ui.showCounter()
+      @matches.visit(@direction)
+      @updateCounter()
+
+  updateCounter: ->
+    count = @matches.getInfo()
+    {total, current} = count
+    content = if total isnt 0 then "#{current} / #{total}" else "0"
+    @ui.updateCounter(content)
+
+    if settings.get('showHoverIndicator') and total isnt 0
+      @hover ?= new Hover()
+      @hover.show @editor, @matches.get(), "#{current}/#{total}"
+
+  handleCommand: (command) ->
+    switch command
+      when 'set-history-next'
+        @ui.setText entry if entry = @historyManager.get('next')
+      when 'set-history-prev'
+        @ui.setText entry if entry = @historyManager.get('prev')
+      when 'set-cursor-word'
+        # [NOTE] We shouldn't simply use cursor::wordRegExp().
+        # Instead use lazy-motion.wordRegExp setting.
+        @setText @main.editor.getWordUnderCursor({wordRegex: @getWordPattern()})
 
   search: (text) ->
     @matches.reset()
@@ -75,9 +97,7 @@ module.exports =
       @ui.confirm()
       return
 
-    match = @matches.get()
-    @matches.refresh()
-    match.visit()
+    @matches.visit()
 
   cancel: ->
     @restoreEditorState()
@@ -93,12 +113,9 @@ module.exports =
 
   reset: ->
     @historyManager.reset()
-    @matchCursor?.destroy()
+    @hover?.reset()
     @matches?.destroy()
-    {
-      @flashingTimeout, @restoreEditorState, @matchCursor,
-      @matches, @direction,
-    } = {}
+    {@flashingTimeout, @restoreEditorState, @matches, @direction} = {}
 
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()
@@ -118,8 +135,8 @@ module.exports =
 
   # Accessed from UI
   # -------------------------
-  getCount: ->
-    @matches.getInfo()
+  # getCount: ->
+  #   @matches.getInfo()
 
   getHistoryManager: ->
     entries = []

@@ -1,6 +1,5 @@
 {Emitter, CompositeDisposable} = require 'atom'
 settings = require './settings'
-Hover = require './hover'
 
 class UI extends HTMLElement
   createdCallback: ->
@@ -37,9 +36,12 @@ class UI extends HTMLElement
       'lazy-motion:land-to-start': => @confirm()
       'lazy-motion:land-to-end': => @confirm('end')
       'lazy-motion:divide': => @toggleDivide()
-      'lazy-motion:set-history-next': => @setHistory('next')
-      'lazy-motion:set-history-prev': => @setHistory('prev')
-      'lazy-motion:set-cursor-word':  => @setCursorWord()
+      'lazy-motion:set-history-next': =>
+        @emitter.emit('did-command', 'set-history-next')
+      'lazy-motion:set-history-prev': =>
+        @emitter.emit('did-command', 'set-history-prev')
+      'lazy-motion:set-cursor-word': =>
+        @emitter.emit('did-command', 'set-cursor-word')
 
     @handleInput()
     this
@@ -56,33 +58,12 @@ class UI extends HTMLElement
       text = @editor.getText()
       if text.length >= settings.get('minimumInputLength')
         @emitter.emit 'did-change', {text}
-      @showCounter()
 
-  showCounter: ->
-    count = @main.getCount()
-    {total, current} = count
-    content = if total isnt 0 then "#{current} / #{total}" else "0"
-    @counterContainer.textContent = "Lazy Motion: #{content}"
-
-    if settings.get('showHoverIndicator')
-      @hover ?= new Hover()
-      if total isnt 0
-        currentMatch = @main.matches.get()
-        content = "#{current}/#{total}"
-        @hover.show @main.editor, currentMatch, content
+  updateCounter: (text) ->
+    @counterContainer.textContent = "Lazy Motion: #{text}"
 
   setText: (text) ->
     @editor.setText text
-
-  setHistory: (direction) ->
-    if entry = @main.historyManager.get(direction)
-      @setText entry
-
-  setCursorWord: ->
-    wordRegex = @main.getWordPattern()
-    # [NOTE] We shouldn't simply use cursor::wordRegExp().
-    # Instead use lazy-motion.wordRegExp setting.
-    @setText @main.editor.getWordUnderCursor({wordRegex})
 
   isMode: (mode) ->
     @mode is mode
@@ -113,10 +94,9 @@ class UI extends HTMLElement
   focus: ->
     @panel.show()
     @editorElement.focus()
-    @showCounter()
+    @updateCounter('0')
 
   unFocus: ->
-    @hover?.reset()
     @setText ''
     @normalModeText = null
     @panel.hide()
@@ -143,11 +123,10 @@ class UI extends HTMLElement
 
   destroy: ->
     @emitter.dispose()
-    @hover?.destroy()
     @panel.destroy()
     @editor.destroy()
     @subscriptions.dispose()
-    {@emitter, @hover, @panel, @editor, @subscriptions} = {}
+    {@emitter, @panel, @editor, @subscriptions} = {}
     @remove()
 
 module.exports =
