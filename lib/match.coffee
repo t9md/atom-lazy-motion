@@ -4,37 +4,50 @@ fuzzaldrin = require 'fuzzaldrin'
 
 class MatchList
   candidateProvider: null
+  tokensAll: null
+  tokensDivided: null
+  matches: null
+  index: -1
 
   constructor: (@editor, @pattern) ->
-    @index         = -1
-    @tokens        = null
-    @tokensDivided = null
-    @matches       = null
-    @lastMatch     = null
     @subscriptions = new CompositeDisposable
     @subscriptions.add @editor.onDidChangeScrollTop => @refresh()
     @subscriptions.add @editor.onDidChangeScrollLeft => @refresh()
 
   isEmpty: ->
-    return true unless @matches
-    @matches.length is 0
+    if @matches?
+      @matches.length is 0
+    else
+      true
 
   isOnly: ->
     @matches.length is 1
 
   getTokens: ->
-    matches = []
-    @editor.scan @pattern, ({range, matchText}) =>
-      matches.push new Match(@editor, {range, matchText})
-    matches
+    unless @tokensAll?
+      matches = []
+      @editor.scan @pattern, ({range, matchText}) =>
+        matches.push new Match(@editor, {range, matchText})
+      @tokensAll = matches
 
-  divide: (matches) ->
-    divided = []
-    @divideInitialPoint = @get().range.start.translate([0, -1])
-    for m in matches
-      @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
-        divided.push new Match(@editor, {range, matchText})
-    divided
+    if @tokensDivided?
+      @tokensDivided
+    else
+      @tokensAll
+
+  divide: ->
+    unless @tokensDivided?
+      matches = []
+      for m in @matches
+        @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
+          matches.push new Match(@editor, {range, matchText})
+      @tokensDivided = matches
+
+  isDivided: ->
+    @tokensDivided?
+
+  clearDivided: ->
+    @tokensDivided = null
 
   narrow: (text, matches) ->
     # @narrowInitialPoint = @get().range.start.translate([0, -1])
@@ -45,15 +58,9 @@ class MatchList
         narrowed.push new Match(@editor, {range, matchText})
     narrowed
 
-  filter: (text, {mode}) ->
-    switch mode
-      when 'normal'
-        tokens = @tokens ?= @getTokens()
-        point = @editor.getCursorBufferPosition()
-      when 'divide'
-        tokens = @tokensDivided ?= @divide(@matches)
-        point = @divideInitialPoint
-
+  filter: (text) ->
+    tokens = @getTokens()
+    point = @editor.getCursorBufferPosition()
     @reset()
     matches = []
     for text in text.trim().split(/\s+/)
@@ -61,9 +68,9 @@ class MatchList
         if matches.length is 0
           fuzzaldrin.filter(tokens, text, key: 'matchText')
         else
-          @narrow(text, matches)
-          # found = fuzzaldrin.filter(tokens, text, key: 'matchText')
-          # (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
+          # @narrow(text, matches)
+          found = fuzzaldrin.filter(tokens, text, key: 'matchText')
+          (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
 
     @matches = _.sortBy matches, (m) -> m.getScore()
     return unless matches.length
@@ -76,6 +83,7 @@ class MatchList
     [first, others..., last] = @matches
     first.first = true
     last?.last = true
+    console.log @matches.length
     @show()
 
   visit: (direction) ->
@@ -103,8 +111,6 @@ class MatchList
     if (index >= 0) then index else (list.length + index)
 
   get: (direction=null) ->
-    # console.log arguments.callee.caller
-    # console.log direction
     @matches[@index].current = false
     switch direction
       when 'next' then @setIndex(@index + 1)
@@ -128,10 +134,10 @@ class MatchList
 
   destroy: ->
     @reset()
-    m.destroy() for m in @tokens ? []
+    m.destroy() for m in @tokensAll ? []
     m.destroy() for m in @tokensDivided ? []
     @subscriptions.dispose()
-    {@index, @tokens, @tokensDivided, @matches, @subscriptions} = {}
+    {@index, @tokensAll, @tokensDivided, @matches, @subscriptions} = {}
 
 class Match
   constructor: (@editor, {@range, @matchText}) ->

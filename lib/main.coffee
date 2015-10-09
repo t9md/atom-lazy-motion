@@ -28,7 +28,6 @@ module.exports =
   observeUI: ->
     @ui.onDidChange ({text}) =>
       @search text
-      @updateCounter()
 
     @ui.onDidConfirm ({text, where}) =>
       @historyManager.save text
@@ -39,7 +38,8 @@ module.exports =
         @historyManager.save text
       @cancel()
 
-    @ui.onDidCommand (command) => @handleCommand(command)
+    @ui.onDidCommand (command) =>
+      @handleCommand(command)
 
   deactivate: ->
     @ui?.destroy()
@@ -82,22 +82,33 @@ module.exports =
         # [NOTE] We shouldn't simply use cursor::wordRegExp().
         # Instead use lazy-motion.wordRegExp setting.
         @setText @main.editor.getWordUnderCursor({wordRegex: @getWordPattern()})
+      when 'toggle-divide'
+        if @matches.isDivided()
+          @matches.clearDivided()
+        else
+          @matches.divide()
+          @search(@ui.getText())
+          if @matches.isEmpty()
+            @ui.setText('')
+          # @matches.visit()
+        # @tokensDivided = divided
 
   search: (text) ->
     @matches.reset()
-    if (@ui.isMode('normal') and not text)
+    if not @matches.isDivided() and not text
       return
-    @matches.filter(text, mode: @ui.getMode())
+    @matches.filter(text)
     if @matches.isEmpty()
-      @debouncedFlashScreen()
-      @ui.hover?.reset()
+      unless @matches.isDivided()
+        @debouncedFlashScreen()
+        @hover?.reset()
       return
 
     if @matches.isOnly() and settings.get('autoLand')
       @ui.confirm()
       return
-
     @matches.visit()
+    @updateCounter()
 
   cancel: ->
     @restoreEditorState()
@@ -108,7 +119,7 @@ module.exports =
     if @editor.getLastSelection().isEmpty()
       @editor.setCursorBufferPosition(point)
     else
-      @editor.selectToBufferPosition point
+      @editor.selectToBufferPosition(point)
     @reset()
 
   reset: ->
@@ -135,9 +146,6 @@ module.exports =
 
   # Accessed from UI
   # -------------------------
-  # getCount: ->
-  #   @matches.getInfo()
-
   getHistoryManager: ->
     entries = []
     index = -1

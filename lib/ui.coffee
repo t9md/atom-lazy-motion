@@ -35,7 +35,8 @@ class UI extends HTMLElement
       'lazy-motion:cancel': => @cancel()
       'lazy-motion:land-to-start': => @confirm()
       'lazy-motion:land-to-end': => @confirm('end')
-      'lazy-motion:divide': => @toggleDivide()
+      'lazy-motion:divide': =>
+        @emitter.emit('did-command', 'toggle-divide')
       'lazy-motion:set-history-next': =>
         @emitter.emit('did-command', 'set-history-next')
       'lazy-motion:set-history-prev': =>
@@ -56,14 +57,17 @@ class UI extends HTMLElement
     @editor.onDidChange =>
       return if @finishing
       text = @editor.getText()
-      if text.length >= settings.get('minimumInputLength')
-        @emitter.emit 'did-change', {text}
+      # if text.length >= settings.get('minimumInputLength')
+      @emitter.emit 'did-change', {text}
 
   updateCounter: (text) ->
     @counterContainer.textContent = "Lazy Motion: #{text}"
 
   setText: (text) ->
     @editor.setText text
+
+  getText: ->
+    @editor.getText()
 
   isMode: (mode) ->
     @mode is mode
@@ -89,7 +93,8 @@ class UI extends HTMLElement
           @normalModeText = null
       when 'divide'
         @normalModeText = @editor.getText()
-        @editor.setText ''
+        @setText @normalModeText
+        # @editor.setText ''
 
   focus: ->
     @panel.show()
