@@ -3,6 +3,11 @@ Hover = require './hover'
 _ = require 'underscore-plus'
 settings = require './settings'
 {MatchList} = require './match'
+{
+  getHistoryManager,
+  saveEditorState,
+  getScreenFlasher
+} = require './utils'
 UI = require './ui'
 
 module.exports =
@@ -13,7 +18,8 @@ module.exports =
   activate: ->
     @ui = new UI
     @ui.initialize(this)
-    @historyManager = @getHistoryManager()
+    @historyManager = getHistoryManager(max: settings.get('historySize'))
+
     @observeUI()
 
     @subscriptions = new CompositeDisposable
@@ -45,13 +51,13 @@ module.exports =
     @ui?.destroy()
     @subscriptions.dispose()
     @historyManager.destroy()
-    {@historyManager, @ui, @subscriptions} = {}
+    {@flasher, @historyManager, @ui, @subscriptions} = {}
     @reset()
 
   start: (@direction, {action}={}) ->
     unless @ui.isVisible()
       @editor = atom.workspace.getActiveTextEditor()
-      @restoreEditorState = @saveEditorState @editor
+      @restoreEditorState = saveEditorState @editor
       @matches = new MatchList(@editor, @getWordPattern())
       switch action
         when 'again' then @handleCommand('set-history-prev')
@@ -87,11 +93,9 @@ module.exports =
           @matches.clearDivided()
         else
           @matches.divide()
-          @search(@ui.getText())
+          @search @ui.getText()
           if @matches.isEmpty()
             @ui.setText('')
-          # @matches.visit()
-        # @tokensDivided = divided
 
   search: (text) ->
     @matches.reset()
@@ -100,7 +104,7 @@ module.exports =
     @matches.filter(text)
     if @matches.isEmpty()
       unless @matches.isDivided()
-        @debouncedFlashScreen()
+        @flashScreen()
         @hover?.reset()
       return
 
@@ -126,7 +130,7 @@ module.exports =
     @historyManager.reset()
     @hover?.reset()
     @matches?.destroy()
-    {@flashingTimeout, @restoreEditorState, @matches, @direction} = {}
+    {@restoreEditorState, @matches, @direction} = {}
 
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()
@@ -144,67 +148,11 @@ module.exports =
       if error
         @ui.cancel()
 
-  # Accessed from UI
-  # -------------------------
-  getHistoryManager: ->
-    entries = []
-    index = -1
-
-    get: (direction) ->
-      if direction is 'prev'
-        index = (index + 1) % entries.length
-      else if direction is 'next'
-        index -= 1
-        index = (entries.length - 1) if index < 0
-      entries[index]
-
-    save: (entry) ->
-      return if _.isEmpty(entry)
-      entries.unshift entry
-      entries = _.uniq entries # Eliminate duplicates
-      if entries.length > settings.get('historySize')
-        entries.splice settings.get('historySize')
-
-    reset: ->
-      index = -1
-
-    destroy: ->
-      entries = null
-      index = null
-
   # Utility
   # -------------------------
-  # Return function to restore editor state.
-  saveEditorState: (editor) ->
-    scrollTop = editor.getScrollTop()
-    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) ->
-      editor.displayBuffer.foldForMarker(m).getStartRow()
-    ->
-      for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
-        editor.foldBufferRow row
-      editor.setScrollTop scrollTop
-
-  debouncedFlashScreen: ->
-    @_debouncedFlashScreen ?= _.debounce @flashScreen.bind(this), 150, true
-    @_debouncedFlashScreen()
-
   flashScreen: ->
-    [startRow, endRow] = @editor.getVisibleRowRange().map (row) =>
-      @editor.bufferRowForScreenRow row
-
-    range = new Range([startRow, 0], [endRow, Infinity])
-    marker = @editor.markBufferRange range,
-      invalidate: 'never'
-      persistent: false
-
-    @flashingDecoration?.getMarker().destroy()
-    clearTimeout @flashingTimeout
-
-    @flashingDecoration = @editor.decorateMarker marker,
-      type: 'highlight'
-      class: 'lazy-motion-flash'
-
-    @flashingTimeout = setTimeout =>
-      @flashingDecoration.getMarker().destroy()
-      @flashingDecoration = null
-    , 150
+    unless @flasher?
+      @flasher = getScreenFlasher
+        class: 'lazy-motion-flash'
+        debounce: 150,
+    @flasher.flash @editor

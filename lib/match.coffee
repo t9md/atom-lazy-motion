@@ -1,6 +1,7 @@
 _ = require 'underscore-plus'
 fuzzaldrin = require 'fuzzaldrin'
-{CompositeDisposable, Range} = require 'atom'
+{CompositeDisposable} = require 'atom'
+{selectVisibleBy, getIndex} = require './utils'
 
 class MatchList
   candidateProvider: null
@@ -83,7 +84,6 @@ class MatchList
     [first, others..., last] = @matches
     first.first = true
     last?.last = true
-    console.log @matches.length
     @show()
 
   visit: (direction) ->
@@ -98,17 +98,11 @@ class MatchList
     m.reset() for m in (@matches ? [])
 
   show: ->
-    m.show() for m in @filterVisible(@matches)
+    for m in selectVisibleBy(@editor, @matches, (m) -> m.range)
+      m.show()
 
   setIndex: (index) ->
-    @index = @getIndex(index, @matches)
-
-  # return adjusted index fit whitin length
-  # return -1 if list is empty.
-  getIndex: (index, list) ->
-    return -1 unless list.length
-    index = index % list.length
-    if (index >= 0) then index else (list.length + index)
+    @index = getIndex(index, @matches)
 
   get: (direction=null) ->
     @matches[@index].current = false
@@ -118,15 +112,6 @@ class MatchList
     match = @matches[@index]
     match.current = true
     match
-
-  getVisibleBufferRange: ->
-    [startRow, endRow] = @editor.getVisibleRowRange().map (row) =>
-      @editor.bufferRowForScreenRow row
-    new Range([startRow, 0], [endRow, Infinity])
-
-  filterVisible: (matches) ->
-    range = @getVisibleBufferRange()
-    (m for m in matches when range.containsRange(m.range))
 
   getInfo: ->
     total: @matches?.length ? 0,
