@@ -38,7 +38,8 @@ class MatchList
     unless @tokensDivided?
       matches = []
       for m in @matches
-        @editor.scanInBufferRange /[\w-_]+/g, m.range, ({range, matchText}) =>
+        # @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
+        @editor.scanInBufferRange /\w+/g, m.range, ({range, matchText}) =>
           matches.push new Match(@editor, {range, matchText})
       @tokensDivided = matches
 
@@ -84,9 +85,9 @@ class MatchList
           found
         else
           # @narrow(text, matches)
-          @narrowWithinSameLine(text, matches)
-          # @filterFollwing(found, matches)
+          # @narrowWithinSameLine(text, matches)
           # @filterSameLine(found, matches)
+          @filterFollwing(found, matches)
 
     @matches = _.sortBy(matches, (m) -> m.getScore())
     return unless matches.length
