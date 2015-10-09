@@ -82,8 +82,7 @@ getHistoryManager = ({max}={}) ->
     index = -1
 
   destroy: ->
-    entries = null
-    index = null
+    {entries, index} = {}
 
 module.exports = {
   saveEditorState

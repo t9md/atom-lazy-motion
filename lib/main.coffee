@@ -19,7 +19,7 @@ module.exports =
     @ui = new UI
     @ui.initialize(this)
     @historyManager = getHistoryManager(max: settings.get('historySize'))
-
+    # @notifyDeprecate()
     @observeUI()
 
     @subscriptions = new CompositeDisposable
@@ -31,13 +31,22 @@ module.exports =
       'lazy-motion:forward-cursor-word': => @start 'next', action: 'cursorWord'
       'lazy-motion:backward-cursor-word': => @start 'prev', action: 'cursorWord'
 
+  notifyDeprecate: ->
+    config = atom.config.get('lazy-motion')
+    content = "lazy-motion:\nconfig options deprecated\n"
+    if _.has(config, 'autoLand')
+      content += '- `autoLand`\n'
+    # if _.has(config, 'saveHistoryOnCancel')
+    #   content += '- `saveHistoryOnCancel`\n'
+    atom.notifications.addWarning content, dismissable: true
+
   observeUI: ->
     @ui.onDidChange ({text}) =>
       @search text
 
-    @ui.onDidConfirm ({text, where}) =>
+    @ui.onDidConfirm ({text}) =>
       @historyManager.save text
-      @land(where)
+      @land()
 
     @ui.onDidCancel ({text}) =>
       if settings.get('saveHistoryOnCancel')
@@ -65,12 +74,11 @@ module.exports =
       @ui.focus()
     else
       return if @matches.isEmpty()
-      @matches.visit(@direction)
+      @matches.visit @direction
       @updateCounter()
 
   updateCounter: ->
-    count = @matches.getInfo()
-    {total, current} = count
+    {total, current} = @matches.getInfo()
     content = if total isnt 0 then "#{current} / #{total}" else "0"
     @ui.updateCounter(content)
 
@@ -87,7 +95,7 @@ module.exports =
       when 'set-cursor-word'
         # [NOTE] We shouldn't simply use cursor::wordRegExp().
         # Instead use lazy-motion.wordRegExp setting.
-        @setText @main.editor.getWordUnderCursor({wordRegex: @getWordPattern()})
+        @setText @editor.getWordUnderCursor({wordRegex: @getWordPattern()})
       when 'toggle-divide'
         if @matches.isDivided()
           @matches.clearDivided()
@@ -99,16 +107,16 @@ module.exports =
 
   search: (text) ->
     @matches.reset()
-    if not @matches.isDivided() and not text
+    if not @matches.isDivided() and (not text)
       return
     @matches.filter(text)
     if @matches.isEmpty()
       unless @matches.isDivided()
         @flashScreen()
-        @hover?.reset()
+      @hover?.reset()
       return
 
-    if @matches.isOnly() and settings.get('autoLand')
+    if (@matches.length is 1) and settings.get('autoLand')
       @ui.confirm()
       return
     @matches.visit()
@@ -118,8 +126,8 @@ module.exports =
     @restoreEditorState()
     @reset()
 
-  land: (where="start") ->
-    point = @matches.get().range[where]
+  land: ->
+    point = @matches.get().range.start
     if @editor.getLastSelection().isEmpty()
       @editor.setCursorBufferPosition(point)
     else

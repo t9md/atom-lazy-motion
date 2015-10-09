@@ -7,6 +7,7 @@ class MatchList
   candidateProvider: null
   tokensAll: null
   tokensDivided: null
+  visibles: null
   matches: null
   index: -1
 
@@ -20,9 +21,6 @@ class MatchList
       @matches.length is 0
     else
       true
-
-  isOnly: ->
-    @matches.length is 1
 
   getTokens: ->
     unless @tokensAll?
@@ -40,7 +38,7 @@ class MatchList
     unless @tokensDivided?
       matches = []
       for m in @matches
-        @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
+        @editor.scanInBufferRange /[\w-_]+/g, m.range, ({range, matchText}) =>
           matches.push new Match(@editor, {range, matchText})
       @tokensDivided = matches
 
@@ -51,7 +49,6 @@ class MatchList
     @tokensDivided = null
 
   narrow: (text, matches) ->
-    # @narrowInitialPoint = @get().range.start.translate([0, -1])
     narrowed = []
     pattern = _.escapeRegExp(text)
     for m in matches
@@ -59,23 +56,43 @@ class MatchList
         narrowed.push new Match(@editor, {range, matchText})
     narrowed
 
+  narrowWithinSameLine: (text, matches) ->
+    ranges =
+      for row in _.uniq(range.start.row for {range} in matches)
+        @editor.bufferRangeForBufferRow(row)
+
+    pattern = _.escapeRegExp(text)
+    narrowed = []
+    for range in ranges
+      @editor.scanInBufferRange ///#{pattern}///gi, range, ({range, matchText}) =>
+        narrowed.push new Match(@editor, {range, matchText})
+    narrowed
+
+  filterFollwing: (found, matches) ->
+    (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
+
+  filterSameLine: (found, matches) ->
+    rows = _.uniq((range.start.row for {range} in matches))
+    (m for m in found when m.range.start.row in rows)
+
   filter: (text) ->
-    tokens = @getTokens()
-    point = @editor.getCursorBufferPosition()
-    @reset()
     matches = []
     for text in text.trim().split(/\s+/)
+      found = fuzzaldrin.filter(@getTokens(), text, key: 'matchText')
       matches =
         if matches.length is 0
-          fuzzaldrin.filter(tokens, text, key: 'matchText')
+          found
         else
           # @narrow(text, matches)
-          found = fuzzaldrin.filter(tokens, text, key: 'matchText')
-          (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
+          @narrowWithinSameLine(text, matches)
+          # @filterFollwing(found, matches)
+          # @filterSameLine(found, matches)
 
-    @matches = _.sortBy matches, (m) -> m.getScore()
+    @matches = _.sortBy(matches, (m) -> m.getScore())
     return unless matches.length
+
     index = 0
+    point = @editor.getCursorBufferPosition()
     for m, i in @matches when m.range.start.isGreaterThan(point)
       index = i
       break
@@ -87,12 +104,7 @@ class MatchList
     @show()
 
   visit: (direction) ->
-    @refresh()
     @get(direction).visit()
-
-  refresh: ->
-    @reset()
-    @show()
 
   reset: ->
     m.reset() for m in (@matches ? [])
@@ -100,6 +112,10 @@ class MatchList
   show: ->
     for m in selectVisibleBy(@editor, @matches, (m) -> m.range)
       m.show()
+
+  refresh: ->
+    @reset()
+    @show()
 
   setIndex: (index) ->
     @index = getIndex(index, @matches)
@@ -118,11 +134,14 @@ class MatchList
     current: if @isEmpty() then 0 else @index+1
 
   destroy: ->
-    @reset()
+    m.destroy() for m in @matches ? []
     m.destroy() for m in @tokensAll ? []
     m.destroy() for m in @tokensDivided ? []
     @subscriptions.dispose()
-    {@index, @tokensAll, @tokensDivided, @matches, @subscriptions} = {}
+    {
+      @index, @tokensAll, @tokensDivided, @matches,
+      @subscriptions, @visibles,
+    } = {}
 
 class Match
   constructor: (@editor, {@range, @matchText}) ->

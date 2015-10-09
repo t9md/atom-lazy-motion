@@ -33,8 +33,7 @@ class UI extends HTMLElement
       'blur':         => @cancel()
 
       'lazy-motion:cancel': => @cancel()
-      'lazy-motion:land-to-start': => @confirm()
-      'lazy-motion:land-to-end': => @confirm('end')
+      'lazy-motion:confirm': => @confirm()
       'lazy-motion:divide': =>
         @emitter.emit('did-command', 'toggle-divide')
       'lazy-motion:set-history-next': =>
@@ -94,7 +93,6 @@ class UI extends HTMLElement
       when 'divide'
         @normalModeText = @editor.getText()
         @setText @normalModeText
-        # @editor.setText ''
 
   focus: ->
     @panel.show()
@@ -109,10 +107,9 @@ class UI extends HTMLElement
     atom.workspace.getActivePane().activate()
     @finishing = false
 
-  confirm: (where) ->
+  confirm: ->
     @finishing = true
-    event = {text: @editor.getText(), where}
-    @emitter.emit 'did-confirm', event
+    @emitter.emit 'did-confirm', {text: @editor.getText()}
     @unFocus()
 
   cancel: ->
