@@ -1,3 +1,6 @@
+## 0.1.15 - FIX
+- Just for releasing v0.1.14. fix minor mistake for releasing version.
+
 ## 0.1.14 - FIX
 - FIX: findFoldMarkers need explicit filter query object from Atom 1.3.0. #9
 
