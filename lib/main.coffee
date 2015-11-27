@@ -178,7 +178,7 @@ module.exports =
   # Return function to restore editor state.
   saveEditorState: (editor) ->
     scrollTop = editor.getScrollTop()
-    foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) =>
+    foldStartRows = editor.displayBuffer.findFoldMarkers({}).map (m) ->
       editor.displayBuffer.foldForMarker(m).getStartRow()
     ->
       for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
