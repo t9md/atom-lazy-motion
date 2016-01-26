@@ -46,6 +46,12 @@
       "type": "boolean",
       "default": true,
       "description": "If false, canceled search won't saved to history."
+    },
+    "clearSarchTextOnEverySearch": {
+      "order": 6,
+      "type": "boolean",
+      "default": false,
+      "description": "Search text is cleared on every search"
     }
   }
 }

@@ -69,7 +69,7 @@ class UI extends HTMLElement
     @updateCounter('0')
 
   unFocus: ->
-    @setText ''
+    @setText '' if settings.get('clearSarchTextOnEverySearch')
     @panel.hide()
     atom.workspace.getActivePane().activate()
     @finishing = false

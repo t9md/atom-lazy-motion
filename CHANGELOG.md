@@ -1,3 +1,7 @@
+## 0.2.1
+- New: Now search keyword is preserved by default.
+- New: New config param `clearSarchTextOnEverySearch` to clear search text on every search. #7.
+
 ## 0.2.0
 - Now use atom's overlay decoration instead of direct pixel calculation.
 - Refactoring: Rewritten 30% of whole code.
