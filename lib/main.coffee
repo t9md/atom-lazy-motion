@@ -55,10 +55,6 @@ module.exports =
       @debouncedFlashScreen()
       return
 
-    if @matches.isOnly() and settings.get('autoLand')
-      @getUI().confirm()
-      return
-
     @matchCursor ?= @getMatchForCursor()
     @matches.visit @direction, from: @matchCursor, redrawAll: true
 

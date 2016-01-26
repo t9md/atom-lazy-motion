@@ -25,12 +25,6 @@
     "underscore-plus": "^1.6.6"
   },
   "configSchema": {
-    "autoLand": {
-      "order": 0,
-      "type": "boolean",
-      "default": false,
-      "description": "automatically land(confirm) if there is no other candidates"
-    },
     "minimumInputLength": {
       "order": 1,
       "type": "integer",

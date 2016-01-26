@@ -45,8 +45,7 @@ class UI extends HTMLElement
       text = @editor.getText()
       if text.length >= settings.get('minimumInputLength')
         @main.search text
-
-      @showCounter() if @main.matches?
+      @showCounter()
 
     subs.add @editor.onDidDestroy ->
       subs.dispose()
