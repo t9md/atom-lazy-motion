@@ -19,7 +19,7 @@ module.exports =
     @ui = new UI
     @ui.initialize(this)
     @searchHistory = getHistoryManager(max: settings.get('historySize'))
-    settings.notifyAndRemoveDeprecate('autoLand')
+    settings.notifyAndRemoveDeprecate('autoLand', 'minimumInputLength')
     @observeUI()
 
     @subscriptions = new CompositeDisposable
@@ -58,54 +58,43 @@ module.exports =
     unless @ui.isVisible()
       @editor = atom.workspace.getActiveTextEditor()
       @restoreEditorState = saveEditorState @editor
-      @matches = new MatchList(@editor, @getWordPattern())
+      @matchList = new MatchList(@editor, @getWordPattern())
       switch action
         when 'again' then @handleCommand('set-search-prev')
         when 'cursorWord' then @handleCommand('set-cursor-word')
       @ui.focus()
     else
-      return if @matches.isEmpty()
-      @matches.visit(@direction)
+      return if @matchList.isEmpty()
+      @matchList.visit(@direction)
       @updateCounter()
 
   updateCounter: ->
-    {total, current} = @matches.getInfo()
+    {total, current} = @matchList.getInfo()
     content = if total isnt 0 then "#{current} / #{total}" else "0"
     @ui.updateCounter(content)
 
     if settings.get('showHoverIndicator') and total isnt 0
       @hover ?= new Hover()
-      @hover.show @editor, @matches.get(), "#{current}/#{total}"
+      @hover.show @editor, @matchList.get(), "#{current}/#{total}"
 
   handleCommand: (command) ->
     switch command
       when 'set-search-next' then @ui.setText(@searchHistory.get('next'))
       when 'set-search-prev' then @ui.setText(@searchHistory.get('prev'))
       when 'set-cursor-word'
-        # [NOTE] We shouldn't simply use cursor::wordRegExp().
-        # Instead use lazy-motion.wordRegExp setting.
+        # [NOTE] # Instead of cursor::wordRegExp(), we use lazy-motion.wordRegExp setting.
         @setText @editor.getWordUnderCursor({wordRegex: @getWordPattern()})
-      when 'toggle-divide'
-        if @matches.isDivided()
-          @matches.clearDivided()
-          @search @ui.getText()
-        else
-          @matches.divide()
-          @search @ui.getText()
-          @ui.setText('') if @matches.isEmpty()
 
   search: (text) ->
-    @matches.reset()
-    # if not @matches.isDivided() and (not text)
-    #   @hover?.reset()
-    #   return
-    @matches.filter(text)
-    if @matches.isEmpty()
-      unless @matches.isDivided()
+    console.log "HELLO"
+    @matchList.reset()
+    @matchList.filter(text)
+    if @matchList.isEmpty()
+      unless @matchList.isDivided()
         flashScreen @editor, {timeout: 100, class: 'lazy-motion-flash'}
       @hover?.reset()
       return
-    @matches.visit()
+    @matchList.visit()
     @updateCounter()
 
   cancel: ->
@@ -113,7 +102,7 @@ module.exports =
     @reset()
 
   land: ->
-    point = @matches.get().range.start
+    point = @matchList.get().range.start
     if @editor.getLastSelection().isEmpty()
       @editor.setCursorBufferPosition(point)
     else
@@ -123,8 +112,8 @@ module.exports =
   reset: ->
     @searchHistory.reset()
     @hover?.reset()
-    @matches?.destroy()
-    {@restoreEditorState, @matches, @direction} = {}
+    @matchList?.destroy()
+    {@restoreEditorState, @matchList, @direction} = {}
 
   getWordPattern: ->
     scope = @editor.getRootScopeDescriptor()

@@ -7,11 +7,10 @@ class Hover extends HTMLElement
 
   show: (editor, match, @textContent) ->
     @reset()
-    @classList.remove('first', 'last')
     @classList.add(match.getClassList()...)
-    @createOverlay editor, match.range
+    @createOverlay editor, match
 
-  createOverlay: (editor, range) ->
+  createOverlay: (editor, {range}) ->
     @marker = editor.markBufferRange range,
       invalidate: "never",
       persistent: false
@@ -22,6 +21,7 @@ class Hover extends HTMLElement
       position: 'head'
 
   reset: ->
+    @classList.remove('first', 'last', 'current')
     @marker?.destroy()
     @marker = null
 

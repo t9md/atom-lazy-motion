@@ -3,28 +3,33 @@ settings = require './settings'
 
 class UI extends HTMLElement
   createdCallback: ->
+    @emitter = new Emitter
     @classList.add 'lazy-motion-ui'
-
-    @editorContainer = document.createElement 'div'
-    @editorContainer.className = 'editor-container'
-
-    @counterContainer = document.createElement 'div'
-    @counterContainer.className = 'counter'
-
+    @counterContainer = @createElement('div', classList: ['counter'])
+    @editorContainer = @createElement('div', classList: ['editor-container'])
     @appendChild @counterContainer
     @appendChild @editorContainer
 
-    @editorElement = document.createElement 'atom-text-editor'
-    @editorElement.classList.add 'editor', 'lazy-motion'
-    @editorElement.getModel().setMini true
-    @editorElement.setAttribute 'mini', ''
+    @editorElement = @createElement 'atom-text-editor',
+      classList: ['editor', 'lazy-motion']
+      attribute: {mini: ''}
+
     @editorContainer.appendChild @editorElement
     @editor = @editorElement.getModel()
-    @panel = atom.workspace.addBottomPanel item: this, visible: false
+    @editor.setMini true
+    @panel = atom.workspace.addBottomPanel {item: this, visible: false}
+
+  createElement: (element, {classList, attribute}) ->
+    element = document.createElement element
+    element.classList.add classList...
+    for name, value of attribute ? {}
+      element.setAttribute(name, value)
+    element
+
+  emitCommand: (command) ->
+    @emitter.emit('command', command)
 
   initialize: (@main) ->
-    @emitter = new Emitter
-    @setMode('normal')
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
       'core:confirm': => @confirm()
@@ -32,15 +37,12 @@ class UI extends HTMLElement
       'click': => @cancel()
       'blur': => @cancel()
 
-      'lazy-motion:divide': => @emitter.emit('command', 'toggle-divide')
+      'core:move-down': => @emitCommand('set-history-next')
+      'core:move-up': => @emitCommand('set-history-prev')
 
-      'core:move-down': => @emitter.emit('command', 'set-history-next')
-      'core:move-up': => @emitter.emit('command', 'set-history-prev')
-
-      'lazy-motion:set-history-next': => @emitter.emit('command', 'set-history-next')
-      'lazy-motion:set-history-prev': => @emitter.emit('command', 'set-history-prev')
-
-      'lazy-motion:set-cursor-word': => @emitter.emit('command', 'set-cursor-word')
+      'lazy-motion:set-history-next': => @emitCommand('set-history-next')
+      'lazy-motion:set-history-prev': => @emitCommand('set-history-prev')
+      'lazy-motion:set-cursor-word': => @emitCommand('set-cursor-word')
 
     @handleInput()
     this
@@ -55,7 +57,6 @@ class UI extends HTMLElement
     @editor.onDidChange =>
       return if @finishing
       text = @getText()
-      # if text.length >= settings.get('minimumInputLength')
       @emitter.emit 'did-change', {text}
 
   updateCounter: (text) ->
@@ -67,33 +68,6 @@ class UI extends HTMLElement
   getText: ->
     @editor.getText()
 
-  isMode: (mode) ->
-    @mode is mode
-
-  getMode: ->
-    @mode
-
-  toggleDivide: ->
-    mode = if @isMode('divide') then 'normal' else 'divide'
-    @setMode(mode)
-
-  setMode: (mode) ->
-    oldMode = @getMode()
-    if mode is 'divide' and @main.matches.isEmpty()
-      return
-    @mode = mode
-    @classList.remove oldMode
-    @classList.add mode
-
-    switch mode
-      when 'normal'
-        if oldMode is 'divide' and @normalModeText
-          @setText @normalModeText
-          @normalModeText = null
-      when 'divide'
-        @normalModeText = @editor.getText()
-        @setText @normalModeText
-
   focus: ->
     @panel.show()
     @editorElement.focus()
@@ -103,7 +77,6 @@ class UI extends HTMLElement
     @setText ''
     @normalModeText = null
     @panel.hide()
-    @setMode('normal')
     atom.workspace.getActivePane().activate()
     @finishing = false
 

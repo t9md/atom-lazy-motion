@@ -54,9 +54,6 @@ atom-text-editor::shadow {
 }
 
 .lazy-motion-ui {
-  &.divide {
-    background-color: fadeout(@background-color-info, 40%);
-  }
   .editor-container {
     padding: @component-padding/4 @component-padding;
   }
@@ -67,19 +64,3 @@ atom-text-editor::shadow {
   }
   // .atom-text-editor.lazy-motion':
 }
-
-// // Highlight matched text
-// .project-folder .list-group {
-//   .character-match {
-//     color: @text-color-highlight;
-//     font-weight: bold;
-//   }
-// }
-// .list-group li.selected {
-//   .project-folder.remove & {
-//     background-color: fadeout(@background-color-error, 40%);
-//   }
-//   .project-folder.add & {
-//     background-color: fadeout(@background-color-info, 40%);
-//   }
-// }

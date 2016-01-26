@@ -1,193 +1,135 @@
 _ = require 'underscore-plus'
-fuzzaldrin = require 'fuzzaldrin'
+fuzzaldrin = require 'fuzzaldrin-plus'
 {CompositeDisposable} = require 'atom'
 {selectVisibleBy, getIndex, flash, getView} = require './utils'
 
 class MatchList
-  candidateProvider: null
-  tokensAll: null
-  tokensDivided: null
-  visibles: null
-  matches: null
+  tokens: null
+  entries: null
   index: -1
 
   constructor: (@editor, @pattern) ->
+    @entries = []
     @subscriptions = new CompositeDisposable
-    @editorElement = getView(@editor)
+    editorElement = getView(@editor)
+    @subscribe editorElement.onDidChangeScrollTop => @refresh()
+    @subscribe editorElement.onDidChangeScrollLeft => @refresh()
 
-    @subscriptions.add @editorElement.onDidChangeScrollTop => @refresh()
-    @subscriptions.add @editorElement.onDidChangeScrollLeft => @refresh()
+  subscribe: (args...) ->
+    @subscriptions.add args...
 
   isEmpty: ->
-    if @matches?
-      @matches.length is 0
-    else
-      true
+    @entries.length is 0
 
   getTokens: ->
-    unless @tokensAll?
-      matches = []
+    unless @tokens?
+      @tokens = []
       @editor.scan @pattern, ({range, matchText}) =>
-        matches.push new Match(@editor, {range, matchText})
-      @tokensAll = matches
-
-    if @tokensDivided?
-      @tokensDivided
-    else
-      @tokensAll
-
-  divide: ->
-    unless @tokensDivided?
-      matches = []
-      for m in @matches
-        # @editor.scanInBufferRange /(?:[A-Z][a-z]+|[a-z]+)/g, m.range, ({range, matchText}) =>
-        @editor.scanInBufferRange /\w+/g, m.range, ({range, matchText}) =>
-          matches.push new Match(@editor, {range, matchText})
-      @tokensDivided = matches
-
-  isDivided: ->
-    @tokensDivided?
-
-  clearDivided: ->
-    @tokensDivided = null
-
-  narrow: (text, matches) ->
-    narrowed = []
-    pattern = _.escapeRegExp(text)
-    for m in matches
-      @editor.scanInBufferRange ///#{pattern}///gi, m.range, ({range, matchText}) =>
-        narrowed.push new Match(@editor, {range, matchText})
-    narrowed
-
-  narrowWithinSameLine: (text, matches) ->
-    ranges =
-      for row in _.uniq(range.start.row for {range} in matches)
-        @editor.bufferRangeForBufferRow(row)
-
-    pattern = _.escapeRegExp(text)
-    narrowed = []
-    for range in ranges
-      @editor.scanInBufferRange ///#{pattern}///gi, range, ({range, matchText}) =>
-        narrowed.push new Match(@editor, {range, matchText})
-    narrowed
-
-  filterFollwing: (found, matches) ->
-    (f for f in found when _.detect(matches, (m) -> f.isFollowing(m)))
-
-  filterSameLine: (found, matches) ->
-    rows = _.uniq((range.start.row for {range} in matches))
-    (m for m in found when m.range.start.row in rows)
+        @tokens.push new Match(@editor, {range, matchText})
+    @tokens
 
   filter: (text) ->
+    @entries = @getTokens()
     matches = []
-    if _.isEmpty(text)
-      @matches = matches
-      return
-    for text in text.trim().split(/\s+/)
-      found = fuzzaldrin.filter(@getTokens(), text, key: 'matchText')
-      matches =
-        if matches.length is 0
-          found
-        else
-          # @narrow(text, matches)
-          # @narrowWithinSameLine(text, matches)
-          # @filterSameLine(found, matches)
-          @filterFollwing(found, matches)
+    for text, index in text.trim().split(/\s+/)
+      found = fuzzaldrin.filter(@entries, text, key: 'matchText')
+      if index is 0
+        matches = found
+      else
+        matches = found.filter (found) ->
+          _.detect(matches, (match) -> found.isFollowing(match))
 
-    @matches = _.sortBy(matches, (m) -> m.getScore())
-    return unless matches.length
+    @entries = _.sortBy(matches, (match) -> match.getScore())
+    return unless @entries.length
 
     index = 0
     point = @editor.getCursorBufferPosition()
-    for m, i in @matches when m.range.start.isGreaterThan(point)
+    for match, i in @entries when match.range.start.isGreaterThan(point)
       index = i
       break
     @setIndex(index)
 
-    [first, others..., last] = @matches
+    [first, others..., last] = @entries
     first.first = true
     last?.last = true
-    @show()
+    @refresh()
 
   visit: (direction) ->
-    @get(direction).visit()
+    return unless match = @get(direction)
 
-  reset: ->
-    for match in @matches ? []
-      match.reset()
+    {range} = match
+    point = range.start
+    @editor.scrollToBufferPosition(point, center: true)
+    @editor.unfoldBufferRow point.row if @editor.isFoldedAtBufferRow(point.row)
 
-  show: ->
-    visibleMatches = selectVisibleBy(@editor, @matches, (match) -> match.range)
-    for match in visibleMatches
-      match.show()
+    flash @editor, range,
+      class: 'lazy-motion-flash'
+      timeout: 150
+
+    @refresh()
 
   refresh: ->
     @reset()
-    @show()
+    for match in @getVisible()
+      match.show()
+
+  reset: ->
+    for match in @entries
+      match.reset()
+
+  getVisible: ->
+    selectVisibleBy @editor, @entries, (match) -> match.range
 
   setIndex: (index) ->
-    @index = getIndex(index, @matches)
+    @index = getIndex(index, @entries)
 
   get: (direction=null) ->
-    @matches[@index].current = false
+    @entries[@index].current = false
     switch direction
       when 'next' then @setIndex(@index + 1)
       when 'prev' then @setIndex(@index - 1)
-    match = @matches[@index]
+    match = @entries[@index]
     match.current = true
     match
 
   getInfo: ->
-    total: @matches?.length ? 0,
+    total: @entries?.length ? 0,
     current: if @isEmpty() then 0 else @index + 1
 
   destroy: ->
-    marker.destroy() for marker in (@matches ? [])
-    marker.destroy() for marker in (@tokensAll ? [])
-    marker.destroy() for marker in (@tokensDivided ? [])
+    marker.destroy() for marker in (@entries ? [])
+    marker.destroy() for marker in (@tokens ? [])
     @subscriptions.dispose()
-    {
-      @index, @tokensAll, @tokensDivided, @matches,
-      @subscriptions, @visibles,
-    } = {}
+    {@index, @tokens,@entries, @subscriptions} = {}
 
 class Match
   constructor: (@editor, {@range, @matchText}) ->
 
   getClassList: ->
     # first and last is exclusive, prioritize 'first'.
-    last = (not @first) and @last
-    [
-      @first and 'first',
-      last and 'last',
-      @current and 'current'
-    ].filter (e) -> e
+    classes = []
+    classes.push('first') if @first
+    classes.push('last') if (not @first and @last)
+    classes.push('current') if @current
+    classes
 
-  isFollowing: (other) ->
-    return false unless (@range.start.row is other.range.start.row)
-    @range.start.isGreaterThan(other.range.start)
-
-  isFirst: -> @first
-  isLast: -> @last
-  isCurrent: -> @current
+  isFollowing: ({range: {start: otherStart}}) ->
+    {start} = @range
+    if start.row is otherStart.row
+      start.isGreaterThan(otherStart)
+    else
+      false
 
   show: ->
-    klass = 'lazy-motion-match'
-    klass += (" " + s) if (s = @getClassList().join(' ')).length
-    @marker = @editor.markBufferRange @range, {invalidate: 'never', persistent: false}
-    @editor.decorateMarker @marker, {type: 'highlight', class: klass}
+    classes = ['lazy-motion-match'].concat(@getClassList()...)
 
-  visit: ->
-    point = @range.start
-    @editor.scrollToBufferPosition(point, center: true)
-    if @editor.isFoldedAtBufferRow(point.row)
-      @editor.unfoldBufferRow point.row
-    @flash()
+    @marker = @editor.markBufferRange @range,
+      invalidate: 'never'
+      persistent: false
 
-  flash: ->
-    return unless @marker?
-    range = @marker.getBufferRange()
-    flash(@editor, range, {class: 'lazy-motion-flash', timeout: 150})
+    @editor.decorateMarker @marker,
+      type: 'highlight'
+      class: classes.join(" ")
 
   getScore: ->
     unless @score?
@@ -202,4 +144,4 @@ class Match
     @reset()
     {@range, @score, @editor, @marker} = {}
 
-module.exports = {Match, MatchList}
+module.exports = {MatchList}
