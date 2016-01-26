@@ -1,3 +1,7 @@
+## 0.1.17
+- Fix #10 Setting view cannot accessible from Atom v1.4.0.
+- Fix #11 Throw error when search single occurrence with autoLand is enabled.
+
 ## 0.1.16 - FIX
 - Just for releasing v0.1.14. fix minor mistake for releasing version.
 
