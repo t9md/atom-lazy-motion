@@ -26,10 +26,16 @@ class UI extends HTMLElement
       element.setAttribute(name, value)
     element
 
-  emitCommand: (command) ->
-    @emitter.emit('command', command)
+  onDidChange: (fn) -> @emitter.on 'did-change', fn
+  onDidConfirm: (fn) -> @emitter.on 'did-confirm', fn
+  onDidCancel: (fn) -> @emitter.on 'did-cancel', fn
+  onDidUnfocus: (fn) -> @emitter.on 'did-unfocus', fn
+  onCommand: (fn) -> @emitter.on 'command', fn
 
   initialize: (@main) ->
+    emitCommand = (command) =>
+      @emitter.emit('command', command)
+
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
       'core:confirm': => @confirm()
@@ -37,33 +43,22 @@ class UI extends HTMLElement
       'click': => @cancel()
       'blur': => @cancel()
 
-      'core:move-down': => @emitCommand('set-history-next')
-      'core:move-up': => @emitCommand('set-history-prev')
+      'core:move-down': -> emitCommand('set-history-next')
+      'core:move-up': -> emitCommand('set-history-prev')
+      'lazy-motion:set-history-next': -> emitCommand('set-history-next')
+      'lazy-motion:set-history-prev': -> emitCommand('set-history-prev')
+      'lazy-motion:set-cursor-word': -> emitCommand('set-cursor-word')
 
-      'lazy-motion:set-history-next': => @emitCommand('set-history-next')
-      'lazy-motion:set-history-prev': => @emitCommand('set-history-prev')
-      'lazy-motion:set-cursor-word': => @emitCommand('set-cursor-word')
-
-    @handleInput()
-    this
-
-  onDidChange: (fn) -> @emitter.on 'did-change', fn
-  onDidConfirm: (fn) -> @emitter.on 'did-confirm', fn
-  onDidCancel: (fn) -> @emitter.on 'did-cancel', fn
-  onDidUnfocus: (fn) -> @emitter.on 'did-unfocus', fn
-  onCommand: (fn) -> @emitter.on 'command', fn
-
-  handleInput: ->
     @editor.onDidChange =>
       return if @finishing
-      text = @getText()
-      @emitter.emit 'did-change', {text}
+      @emitter.emit 'did-change', {text: @getText()}
+    this
 
   updateCounter: (text) ->
     @counterContainer.textContent = "Lazy Motion: #{text}"
 
   setText: (text) ->
-    @editor.setText text
+    @editor.setText(text)
 
   getText: ->
     @editor.getText()
@@ -75,7 +70,6 @@ class UI extends HTMLElement
 
   unFocus: ->
     @setText ''
-    @normalModeText = null
     @panel.hide()
     atom.workspace.getActivePane().activate()
     @finishing = false

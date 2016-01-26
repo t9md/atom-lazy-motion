@@ -34,6 +34,7 @@ module.exports =
   observeUI: ->
     @ui.onDidChange ({text}) =>
       @search(text)
+      @updateCounter()
 
     @ui.onDidConfirm ({text}) =>
       @searchHistory.save text
@@ -45,6 +46,7 @@ module.exports =
       @cancel()
 
     @ui.onCommand (command) =>
+      console.log command
       @handleCommand(command)
 
   deactivate: ->
@@ -79,10 +81,8 @@ module.exports =
 
   handleCommand: (command) ->
     switch command
-      when 'set-search-next'
-        @ui.setText(@searchHistory.get('next'))
-      when 'set-search-prev'
-        @ui.setText(@searchHistory.get('prev'))
+      when 'set-history-next' then @ui.setText(@searchHistory.get('next'))
+      when 'set-history-prev' then @ui.setText(@searchHistory.get('prev'))
       when 'set-cursor-word'
         # [NOTE] # Instead of cursor::wordRegExp(), we use lazy-motion.wordRegExp setting.
         cursorWord = @editor.getWordUnderCursor({wordRegex: @getWordPattern()})
@@ -96,7 +96,6 @@ module.exports =
       @hover?.reset()
       return
     @matchList.visit()
-    @updateCounter()
 
   cancel: ->
     @restoreEditorState()
