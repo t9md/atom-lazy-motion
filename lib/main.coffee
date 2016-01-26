@@ -79,19 +79,20 @@ module.exports =
 
   handleCommand: (command) ->
     switch command
-      when 'set-search-next' then @ui.setText(@searchHistory.get('next'))
-      when 'set-search-prev' then @ui.setText(@searchHistory.get('prev'))
+      when 'set-search-next'
+        @ui.setText(@searchHistory.get('next'))
+      when 'set-search-prev'
+        @ui.setText(@searchHistory.get('prev'))
       when 'set-cursor-word'
         # [NOTE] # Instead of cursor::wordRegExp(), we use lazy-motion.wordRegExp setting.
-        @setText @editor.getWordUnderCursor({wordRegex: @getWordPattern()})
+        cursorWord = @editor.getWordUnderCursor({wordRegex: @getWordPattern()})
+        @ui.setText(cursorWord)
 
   search: (text) ->
-    console.log "HELLO"
     @matchList.reset()
     @matchList.filter(text)
     if @matchList.isEmpty()
-      unless @matchList.isDivided()
-        flashScreen @editor, {timeout: 100, class: 'lazy-motion-flash'}
+      flashScreen @editor, {timeout: 100, class: 'lazy-motion-flash'}
       @hover?.reset()
       return
     @matchList.visit()

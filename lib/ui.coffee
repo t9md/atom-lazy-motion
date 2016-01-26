@@ -81,6 +81,7 @@ class UI extends HTMLElement
     @finishing = false
 
   confirm: ->
+    return if @main.matchList.isEmpty()
     @finishing = true
     @emitter.emit 'did-confirm', {text: @getText()}
     @unFocus()
