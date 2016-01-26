@@ -1,5 +1,8 @@
-## WIP
+## 0.2.0
 - Now use atom's overlay decoration instead of direct pixel calculation.
+- Refactoring: Rewritten 30% of whole code.
+- New: #4 Support space separated multi search keyword. right keyword is searched from line where left keyword was found.
+- New: Use fuzzaldrin-plus but not much difference for behavior.
 
 ## 0.1.17
 - Fix #10 Setting view cannot accessible from Atom v1.4.0.
