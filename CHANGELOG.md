@@ -1,4 +1,4 @@
-## 0.2.1
+## 0.3.0
 - New: New config param `clearSearchTextOnEverySearch` to clear search text on every search. #7.
 
 ## 0.2.0
