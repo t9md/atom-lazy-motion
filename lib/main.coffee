@@ -46,7 +46,6 @@ module.exports =
       @cancel()
 
     @ui.onCommand (command) =>
-      console.log command
       @handleCommand(command)
 
   deactivate: ->
@@ -62,7 +61,7 @@ module.exports =
       @restoreEditorState = saveEditorState @editor
       @matchList = new MatchList(@editor, @getWordPattern())
       switch action
-        when 'again' then @handleCommand('set-search-prev')
+        when 'again' then @handleCommand('set-history-prev')
         when 'cursorWord' then @handleCommand('set-cursor-word')
       @ui.focus()
     else
