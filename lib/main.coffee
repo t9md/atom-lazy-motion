@@ -72,7 +72,7 @@ module.exports =
     get: ->
       return matches if matches
       matches = []
-      editor.scan pattern, ({range, matchText}) =>
+      editor.scan pattern, ({range, matchText}) ->
         matches.push new Match(editor, {range, matchText})
       matches
 
