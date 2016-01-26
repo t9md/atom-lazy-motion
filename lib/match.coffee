@@ -1,7 +1,7 @@
 _ = require 'underscore-plus'
 fuzzaldrin = require 'fuzzaldrin'
 {CompositeDisposable} = require 'atom'
-{selectVisibleBy, getIndex} = require './utils'
+{selectVisibleBy, getIndex, flash, getView} = require './utils'
 
 class MatchList
   candidateProvider: null
@@ -13,8 +13,10 @@ class MatchList
 
   constructor: (@editor, @pattern) ->
     @subscriptions = new CompositeDisposable
-    @subscriptions.add @editor.onDidChangeScrollTop => @refresh()
-    @subscriptions.add @editor.onDidChangeScrollLeft => @refresh()
+    @editorElement = getView(@editor)
+
+    @subscriptions.add @editorElement.onDidChangeScrollTop => @refresh()
+    @subscriptions.add @editorElement.onDidChangeScrollLeft => @refresh()
 
   isEmpty: ->
     if @matches?
@@ -78,6 +80,9 @@ class MatchList
 
   filter: (text) ->
     matches = []
+    if _.isEmpty(text)
+      @matches = matches
+      return
     for text in text.trim().split(/\s+/)
       found = fuzzaldrin.filter(@getTokens(), text, key: 'matchText')
       matches =
@@ -108,11 +113,13 @@ class MatchList
     @get(direction).visit()
 
   reset: ->
-    m.reset() for m in (@matches ? [])
+    for match in @matches ? []
+      match.reset()
 
   show: ->
-    for m in selectVisibleBy(@editor, @matches, (m) -> m.range)
-      m.show()
+    visibleMatches = selectVisibleBy(@editor, @matches, (match) -> match.range)
+    for match in visibleMatches
+      match.show()
 
   refresh: ->
     @reset()
@@ -132,12 +139,12 @@ class MatchList
 
   getInfo: ->
     total: @matches?.length ? 0,
-    current: if @isEmpty() then 0 else @index+1
+    current: if @isEmpty() then 0 else @index + 1
 
   destroy: ->
-    m.destroy() for m in @matches ? []
-    m.destroy() for m in @tokensAll ? []
-    m.destroy() for m in @tokensDivided ? []
+    marker.destroy() for marker in (@matches ? [])
+    marker.destroy() for marker in (@tokensAll ? [])
+    marker.destroy() for marker in (@tokensDivided ? [])
     @subscriptions.dispose()
     {
       @index, @tokensAll, @tokensDivided, @matches,
@@ -151,13 +158,13 @@ class Match
     # first and last is exclusive, prioritize 'first'.
     last = (not @first) and @last
     [
-      @first   and 'first',
-      last     and 'last',
+      @first and 'first',
+      last and 'last',
       @current and 'current'
     ].filter (e) -> e
 
   isFollowing: (other) ->
-    return false if @range.start.row isnt other.range.start.row
+    return false unless (@range.start.row is other.range.start.row)
     @range.start.isGreaterThan(other.range.start)
 
   isFirst: -> @first
@@ -166,14 +173,9 @@ class Match
 
   show: ->
     klass = 'lazy-motion-match'
-    if s = @getClassList().join(' ')
-      klass += " " + s
-    @marker = @editor.markBufferRange @range,
-      invalidate: 'never'
-      persistent: false
-    @editor.decorateMarker @marker,
-      type: 'highlight'
-      class: klass
+    klass += (" " + s) if (s = @getClassList().join(' ')).length
+    @marker = @editor.markBufferRange @range, {invalidate: 'never', persistent: false}
+    @editor.decorateMarker @marker, {type: 'highlight', class: klass}
 
   visit: ->
     point = @range.start
@@ -183,20 +185,15 @@ class Match
     @flash()
 
   flash: ->
-    marker = @marker.copy()
-    decoration = @editor.decorateMarker marker,
-      type: 'highlight'
-      class: 'lazy-motion-flash'
-
-    setTimeout  ->
-      marker.destroy()
-    , 150
+    return unless @marker?
+    range = @marker.getBufferRange()
+    flash(@editor, range, {class: 'lazy-motion-flash', timeout: 150})
 
   getScore: ->
-    @score ?= (
+    unless @score?
       {row, column} = @range.start
-      row * 1000 + column
-    )
+      @score = row * 1000 + column
+    @score
 
   reset: ->
     @marker?.destroy()

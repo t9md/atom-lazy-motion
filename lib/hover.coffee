@@ -7,10 +7,8 @@ class Hover extends HTMLElement
 
   show: (editor, match, @textContent) ->
     @reset()
-    @classList.remove 'top'
-    @classList.remove 'bottom'
-    @classList.add 'top'    if match.isFirst()
-    @classList.add 'bottom' if match.isLast()
+    @classList.remove('first', 'last')
+    @classList.add(match.getClassList()...)
     @createOverlay editor, match.range
 
   createOverlay: (editor, range) ->

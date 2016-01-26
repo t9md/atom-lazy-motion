@@ -29,33 +29,32 @@ class UI extends HTMLElement
     @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
       'core:confirm': => @confirm()
       'core:cancel':  => @cancel()
-      'click':        => @cancel()
-      'blur':         => @cancel()
+      'click': => @cancel()
+      'blur': => @cancel()
 
-      'lazy-motion:cancel': => @cancel()
-      'lazy-motion:confirm': => @confirm()
-      'lazy-motion:divide': =>
-        @emitter.emit('did-command', 'toggle-divide')
-      'lazy-motion:set-history-next': =>
-        @emitter.emit('did-command', 'set-history-next')
-      'lazy-motion:set-history-prev': =>
-        @emitter.emit('did-command', 'set-history-prev')
-      'lazy-motion:set-cursor-word': =>
-        @emitter.emit('did-command', 'set-cursor-word')
+      'lazy-motion:divide': => @emitter.emit('command', 'toggle-divide')
+
+      'core:move-down': => @emitter.emit('command', 'set-history-next')
+      'core:move-up': => @emitter.emit('command', 'set-history-prev')
+
+      'lazy-motion:set-history-next': => @emitter.emit('command', 'set-history-next')
+      'lazy-motion:set-history-prev': => @emitter.emit('command', 'set-history-prev')
+
+      'lazy-motion:set-cursor-word': => @emitter.emit('command', 'set-cursor-word')
 
     @handleInput()
     this
 
-  onDidChange:  (fn) -> @emitter.on 'did-change', fn
+  onDidChange: (fn) -> @emitter.on 'did-change', fn
   onDidConfirm: (fn) -> @emitter.on 'did-confirm', fn
-  onDidCancel:  (fn) -> @emitter.on 'did-cancel', fn
+  onDidCancel: (fn) -> @emitter.on 'did-cancel', fn
   onDidUnfocus: (fn) -> @emitter.on 'did-unfocus', fn
-  onDidCommand: (fn) -> @emitter.on 'did-command', fn
+  onCommand: (fn) -> @emitter.on 'command', fn
 
   handleInput: ->
     @editor.onDidChange =>
       return if @finishing
-      text = @editor.getText()
+      text = @getText()
       # if text.length >= settings.get('minimumInputLength')
       @emitter.emit 'did-change', {text}
 
@@ -71,7 +70,8 @@ class UI extends HTMLElement
   isMode: (mode) ->
     @mode is mode
 
-  getMode: -> @mode
+  getMode: ->
+    @mode
 
   toggleDivide: ->
     mode = if @isMode('divide') then 'normal' else 'divide'
@@ -109,15 +109,14 @@ class UI extends HTMLElement
 
   confirm: ->
     @finishing = true
-    @emitter.emit 'did-confirm', {text: @editor.getText()}
+    @emitter.emit 'did-confirm', {text: @getText()}
     @unFocus()
 
   cancel: ->
     # [NOTE] blur event happen on confirmed() in this case we shouldn't cancel
     return if @finishing
     @finishing = true
-    event = {text: @editor.getText()}
-    @emitter.emit 'did-cancel', event
+    @emitter.emit 'did-cancel', {text: @getText()}
     @unFocus()
 
   isVisible: ->

@@ -1,23 +1,24 @@
 {CompositeDisposable, Range} = require 'atom'
-Hover = require './hover'
 _ = require 'underscore-plus'
+
+Hover = require './hover'
 settings = require './settings'
 {MatchList} = require './match'
 {
   getHistoryManager,
   saveEditorState,
-  getScreenFlasher
+  flashScreen
 } = require './utils'
 UI = require './ui'
 
 module.exports =
   subscriptions: null
-  historyManager: null
+  searchHistory: null
 
   activate: ->
     @ui = new UI
     @ui.initialize(this)
-    @historyManager = getHistoryManager(max: settings.get('historySize'))
+    @searchHistory = getHistoryManager(max: settings.get('historySize'))
     settings.notifyAndRemoveDeprecate('autoLand')
     @observeUI()
 
@@ -32,25 +33,25 @@ module.exports =
 
   observeUI: ->
     @ui.onDidChange ({text}) =>
-      @search text
+      @search(text)
 
     @ui.onDidConfirm ({text}) =>
-      @historyManager.save text
+      @searchHistory.save text
       @land()
 
     @ui.onDidCancel ({text}) =>
       if settings.get('saveHistoryOnCancel')
-        @historyManager.save text
+        @searchHistory.save text
       @cancel()
 
-    @ui.onDidCommand (command) =>
+    @ui.onCommand (command) =>
       @handleCommand(command)
 
   deactivate: ->
     @ui?.destroy()
     @subscriptions.dispose()
-    @historyManager.destroy()
-    {@flasher, @historyManager, @ui, @subscriptions} = {}
+    @searchHistory.destroy()
+    {@searchHistory, @ui, @subscriptions} = {}
     @reset()
 
   start: (@direction, {action}={}) ->
@@ -59,12 +60,12 @@ module.exports =
       @restoreEditorState = saveEditorState @editor
       @matches = new MatchList(@editor, @getWordPattern())
       switch action
-        when 'again' then @handleCommand('set-history-prev')
+        when 'again' then @handleCommand('set-search-prev')
         when 'cursorWord' then @handleCommand('set-cursor-word')
       @ui.focus()
     else
       return if @matches.isEmpty()
-      @matches.visit @direction
+      @matches.visit(@direction)
       @updateCounter()
 
   updateCounter: ->
@@ -78,10 +79,8 @@ module.exports =
 
   handleCommand: (command) ->
     switch command
-      when 'set-history-next'
-        @ui.setText entry if entry = @historyManager.get('next')
-      when 'set-history-prev'
-        @ui.setText entry if entry = @historyManager.get('prev')
+      when 'set-search-next' then @ui.setText(@searchHistory.get('next'))
+      when 'set-search-prev' then @ui.setText(@searchHistory.get('prev'))
       when 'set-cursor-word'
         # [NOTE] We shouldn't simply use cursor::wordRegExp().
         # Instead use lazy-motion.wordRegExp setting.
@@ -89,25 +88,22 @@ module.exports =
       when 'toggle-divide'
         if @matches.isDivided()
           @matches.clearDivided()
+          @search @ui.getText()
         else
           @matches.divide()
           @search @ui.getText()
-          if @matches.isEmpty()
-            @ui.setText('')
+          @ui.setText('') if @matches.isEmpty()
 
   search: (text) ->
     @matches.reset()
-    if not @matches.isDivided() and (not text)
-      return
+    # if not @matches.isDivided() and (not text)
+    #   @hover?.reset()
+    #   return
     @matches.filter(text)
     if @matches.isEmpty()
       unless @matches.isDivided()
-        @flashScreen()
+        flashScreen @editor, {timeout: 100, class: 'lazy-motion-flash'}
       @hover?.reset()
-      return
-
-    if (@matches.length is 1) and settings.get('autoLand')
-      @ui.confirm()
       return
     @matches.visit()
     @updateCounter()
@@ -125,7 +121,7 @@ module.exports =
     @reset()
 
   reset: ->
-    @historyManager.reset()
+    @searchHistory.reset()
     @hover?.reset()
     @matches?.destroy()
     {@restoreEditorState, @matches, @direction} = {}
@@ -145,12 +141,3 @@ module.exports =
     finally
       if error
         @ui.cancel()
-
-  # Utility
-  # -------------------------
-  flashScreen: ->
-    unless @flasher?
-      @flasher = getScreenFlasher
-        class: 'lazy-motion-flash'
-        debounce: 150,
-    @flasher.flash @editor
