@@ -12,14 +12,13 @@ UI = require './ui'
 
 module.exports =
   subscriptions: null
-  config: settings.config
   historyManager: null
 
   activate: ->
     @ui = new UI
     @ui.initialize(this)
     @historyManager = getHistoryManager(max: settings.get('historySize'))
-    # @notifyDeprecate()
+    settings.notifyAndRemoveDeprecate('autoLand')
     @observeUI()
 
     @subscriptions = new CompositeDisposable
@@ -30,15 +29,6 @@ module.exports =
       'lazy-motion:backward-again': => @start 'prev', action: 'again'
       'lazy-motion:forward-cursor-word': => @start 'next', action: 'cursorWord'
       'lazy-motion:backward-cursor-word': => @start 'prev', action: 'cursorWord'
-
-  notifyDeprecate: ->
-    config = atom.config.get('lazy-motion')
-    content = "lazy-motion:\nconfig options deprecated\n"
-    if _.has(config, 'autoLand')
-      content += '- `autoLand`\n'
-    # if _.has(config, 'saveHistoryOnCancel')
-    #   content += '- `saveHistoryOnCancel`\n'
-    atom.notifications.addWarning content, dismissable: true
 
   observeUI: ->
     @ui.onDidChange ({text}) =>

@@ -4,7 +4,7 @@ _ = require 'underscore-plus'
 # Return function to restore editor's scrollTop and fold state.
 saveEditorState = (editor) ->
   scrollTop = editor.getScrollTop()
-  foldStartRows = editor.displayBuffer.findFoldMarkers().map (m) ->
+  foldStartRows = editor.displayBuffer.findFoldMarkers({}).map (m) ->
     editor.displayBuffer.foldForMarker(m).getStartRow()
   ->
     for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)

@@ -1,5 +1,15 @@
-## [PRE] 0.1.14 - Improve
+## WIP
 - Now use atom's overlay decoration instead of direct pixel calculation.
+
+## 0.1.17
+- Fix #10 Setting view cannot accessible from Atom v1.4.0.
+- Fix #11 Throw error when search single occurrence with autoLand is enabled.
+
+## 0.1.16 - FIX
+- Just for releasing v0.1.14. fix minor mistake for releasing version.
+
+## 0.1.14 - FIX
+- FIX: findFoldMarkers need explicit filter query object from Atom 1.3.0. #9
 
 ## 0.1.13 - Improve
 - Now hover indicator follow scroll. Useful when quickly visit, scroll then cancel.

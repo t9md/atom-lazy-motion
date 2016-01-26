@@ -1,33 +1,29 @@
-ConfigPlus = require 'atom-config-plus'
+module.exports =
+  scope: 'lazy-motion'
 
-module.exports = new ConfigPlus 'lazy-motion',
-  autoLand:
-    order:   0
-    type:    'boolean'
-    default: false
-    description: "automatically land(confirm) if there is no other candidates"
-  minimumInputLength:
-    order:   1
-    type:    'integer'
-    minimum: 0
-    default: 0
-    description: "Search start only when input length exceeds this value"
-  wordRegExp:
-    order:   2
-    type:    'string'
-    default: '[@\\w-.():?]+'
-    description: "Used to build candidate List"
-  showHoverIndicator:
-    order:   3
-    type:    'boolean'
-    default: true
-  historySize:
-    order:   4
-    type:    'integer'
-    minimum: 0
-    default: 30
-  saveHistoryOnCancel:
-    order:   5
-    type:    'boolean'
-    default: true
-    description: "If false, canceled search won't saved to history."
+  notifyAndRemoveDeprecate: (params...) ->
+    deprecatedParams = (param for param in params when @has(param))
+    atom.config.get('')
+    for param in deprecatedParams
+      @delete param
+
+    if deprecatedParams.length
+      content = [
+        "#{@scope}: Config options deprecated.  ",
+        "Automatically removed from your `connfig.cson`  "
+      ]
+      for param in deprecatedParams
+        content.push "- `#{param}`"
+      atom.notifications.addWarning content.join("\n"), dismissable: true
+
+  has: (param) ->
+    param of atom.config.get(@scope)
+
+  delete: (param) ->
+    @set(param, undefined)
+
+  get: (param) ->
+    atom.config.get("#{@scope}.#{param}")
+
+  set: (param, value) ->
+    atom.config.set("#{@scope}.#{param}", value)
