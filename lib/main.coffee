@@ -64,7 +64,7 @@ module.exports =
         when 'again' then @handleCommand('set-history-prev')
         when 'cursorWord' then @handleCommand('set-cursor-word')
         else
-          unless settings.get('clearSarchTextOnEverySearch')
+          unless settings.get('clearSearchTextOnEverySearch')
             text = @ui.getText('')
             @ui.setText(text) unless _.isEmpty(text)
       @ui.focus()

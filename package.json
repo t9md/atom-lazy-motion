@@ -47,10 +47,10 @@
       "default": true,
       "description": "If false, canceled search won't saved to history."
     },
-    "clearSarchTextOnEverySearch": {
+    "clearSearchTextOnEverySearch": {
       "order": 6,
       "type": "boolean",
-      "default": false,
+      "default": true,
       "description": "Search text is cleared on every search"
     }
   }
