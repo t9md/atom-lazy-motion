@@ -3,6 +3,8 @@
 - Refactoring: Rewritten 30% of whole code.
 - New: #4 Support space separated multi search keyword. right keyword is searched from line where left keyword was found.
 - New: Use fuzzaldrin-plus but not much difference for behavior.
+- Breaking: Remove `autoLand`, `minimumInputLength` configuration parameter.
+- Remove dependency of atom-config-plus module.
 
 ## 0.1.17
 - Fix #10 Setting view cannot accessible from Atom v1.4.0.
