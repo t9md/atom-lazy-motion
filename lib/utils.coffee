@@ -80,7 +80,7 @@ flash = (editor, range, options) ->
 flashScreen = (editor, options) ->
   flash(editor, getVisibleBufferRange(editor), options)
 
-elementBuilder =
+ElementBuilder =
   includeInto: (target) ->
     for name, value of this when name isnt "includeInto"
       target[name] = value.bind(this)
@@ -113,5 +113,5 @@ module.exports = {
   getHistoryManager
   flash
   flashScreen
-  elementBuilder
+  ElementBuilder
 }

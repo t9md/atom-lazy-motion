@@ -1,10 +1,10 @@
 {Emitter, CompositeDisposable} = require 'atom'
 settings = require './settings'
-{elementBuilder} = require './utils'
+{ElementBuilder} = require './utils'
 
 class UI extends HTMLElement
   createdCallback: ->
-    elementBuilder.includeInto(this)
+    ElementBuilder.includeInto(this)
     @emitter = new Emitter
     @className = 'lazy-motion-ui'
 
