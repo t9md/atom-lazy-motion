@@ -83,7 +83,7 @@ flashScreen = (editor, options) ->
 ElementBuilder =
   includeInto: (target) ->
     for name, value of this when name isnt "includeInto"
-      target[name] = value.bind(this)
+      target::[name] = value.bind(this)
 
   div: (params) ->
     @createElement 'div', params

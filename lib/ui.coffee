@@ -3,8 +3,9 @@ settings = require './settings'
 {ElementBuilder} = require './utils'
 
 class UI extends HTMLElement
+  ElementBuilder.includeInto(this)
+  
   createdCallback: ->
-    ElementBuilder.includeInto(this)
     @emitter = new Emitter
     @className = 'lazy-motion-ui'
 
