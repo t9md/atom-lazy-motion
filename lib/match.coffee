@@ -1,5 +1,5 @@
 _ = require 'underscore-plus'
-fuzzaldrin = require 'fuzzaldrin-plus'
+fuzzaldrin = require 'fuzzaldrin'
 {CompositeDisposable} = require 'atom'
 {selectVisibleBy, getIndex, flash, getView} = require './utils'
 
