@@ -1,3 +1,6 @@
+## 0.3.1
+- Revert to fuzzaldrin from fuzzaldrin-plus for `:` matching is better for CoffeeScript, not investigated deep.
+
 ## 0.3.0
 - New: New config param `clearSearchTextOnEverySearch` to clear search text on every search. #7.
 
