@@ -25,7 +25,7 @@ class MatchList
     unless @tokens?
       @tokens = []
       @editor.scan @pattern, ({range, matchText}) =>
-        @tokens.push new Match(@editor, {range, matchText})
+        @tokens.push(new Match(@editor, {range, matchText}))
     @tokens
 
   filter: (text) ->
@@ -122,14 +122,8 @@ class Match
 
   show: ->
     classes = ['lazy-motion-match'].concat(@getClassList()...)
-
-    @marker = @editor.markBufferRange @range,
-      invalidate: 'never'
-      persistent: false
-
-    @editor.decorateMarker @marker,
-      type: 'highlight'
-      class: classes.join(" ")
+    @marker = @editor.markBufferRange(@range, invalidate: 'never')
+    @editor.decorateMarker(@marker, type: 'highlight', class: classes.join(" "))
 
   getScore: ->
     unless @score?

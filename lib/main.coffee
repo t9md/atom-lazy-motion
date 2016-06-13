@@ -4,11 +4,7 @@ _ = require 'underscore-plus'
 Hover = require './hover'
 settings = require './settings'
 {MatchList} = require './match'
-{
-  getHistoryManager,
-  saveEditorState,
-  flashScreen
-} = require './utils'
+{getHistoryManager, saveEditorState, flashScreen} = require './utils'
 UI = require './ui'
 
 module.exports =

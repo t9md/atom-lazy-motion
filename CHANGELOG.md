@@ -1,3 +1,6 @@
+## 0.4.0
+- Fix: use displayLayer introduced in Atom 1.9.0
+
 ## 0.3.1
 - Revert to fuzzaldrin from fuzzaldrin-plus for `:` matching is better for CoffeeScript, not investigated deep.
 

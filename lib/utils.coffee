@@ -8,12 +8,14 @@ getView = (model) ->
 saveEditorState = (editor) ->
   editorElement = getView(editor)
   scrollTop = editorElement.getScrollTop()
-  foldStartRows = editor.displayBuffer.findFoldMarkers({}).map (marker) ->
-    editor.displayBuffer.foldForMarker(marker).getStartRow()
+
+  # [TODO] REMOVE-on=displayLayer-is-out
+  foldFinder = editor.displayLayer ? editor.displayBuffer
+  foldStartRows = foldFinder.findFoldMarkers({}).map (m) -> m.getStartPosition().row
   ->
     for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
-      editor.foldBufferRow row
-    editorElement.setScrollTop scrollTop
+      editor.foldBufferRow(row)
+    editorElement.setScrollTop(scrollTop)
 
 # Return adjusted index fit whitin length
 # Return -1 if list is empty.
@@ -65,13 +67,8 @@ getHistoryManager = ({max}={}) ->
     {entries, index} = {}
 
 flash = (editor, range, options) ->
-  marker = editor.markBufferRange range,
-    invalidate: 'never'
-    persistent: false
-
-  editor.decorateMarker marker,
-    type: 'highlight'
-    class: options.class
+  marker = editor.markBufferRange(range, invalidate: 'never')
+  editor.decorateMarker(marker, type: 'highlight', class: options.class)
 
   setTimeout ->
     marker.destroy()

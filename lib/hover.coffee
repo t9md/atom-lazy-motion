@@ -11,10 +11,7 @@ class Hover extends HTMLElement
     @createOverlay editor, match
 
   createOverlay: (editor, {range}) ->
-    @marker = editor.markBufferRange range,
-      invalidate: "never",
-      persistent: false
-
+    @marker = editor.markBufferRange(range, invalidate: "never")
     editor.decorateMarker @marker,
       type: 'overlay'
       item: this
