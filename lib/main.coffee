@@ -12,8 +12,7 @@ module.exports =
   searchHistory: null
 
   activate: ->
-    @ui = new UI
-    @ui.initialize(this)
+    @ui = new UI().initialize(this)
     @searchHistory = getHistoryManager(max: settings.get('historySize'))
     settings.notifyAndRemoveDeprecate('autoLand', 'minimumInputLength')
     @observeUI()

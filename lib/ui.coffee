@@ -4,7 +4,7 @@ settings = require './settings'
 
 class UI extends HTMLElement
   ElementBuilder.includeInto(this)
-  
+
   createdCallback: ->
     @emitter = new Emitter
     @className = 'lazy-motion-ui'
@@ -23,8 +23,9 @@ class UI extends HTMLElement
     )
 
     @editor = @editorElement.getModel()
-    @editor.setMini true
-    @panel = atom.workspace.addBottomPanel {item: this, visible: false}
+    @editor.setMini(true)
+    @panel = atom.workspace.addBottomPanel(item: this, visible: false)
+    this
 
   onDidChange: (fn) -> @emitter.on 'did-change', fn
   onDidConfirm: (fn) -> @emitter.on 'did-confirm', fn
@@ -32,22 +33,27 @@ class UI extends HTMLElement
   onDidUnfocus: (fn) -> @emitter.on 'did-unfocus', fn
   onCommand: (fn) -> @emitter.on 'command', fn
 
+  emitCommand: (command) ->
+    @emitter.emit('command', command)
+
   initialize: (@main) ->
-    emitCommand = (command) =>
-      @emitter.emit('command', command)
+    emitCommand = @emitCommand.bind(this)
 
     @subscriptions = new CompositeDisposable
-    @subscriptions.add atom.commands.add 'atom-text-editor.lazy-motion',
+    @subscriptions.add atom.commands.add @editorElement,
       'core:confirm': => @confirm()
       'core:cancel':  => @cancel()
-      'click': => @cancel()
-      'blur': => @cancel()
+      # 'click': => @cancel()
+      # 'blur': => @cancel() if @isVisible()
 
       'core:move-down': -> emitCommand('set-history-next')
       'core:move-up': -> emitCommand('set-history-prev')
       'lazy-motion:set-history-next': -> emitCommand('set-history-next')
       'lazy-motion:set-history-prev': -> emitCommand('set-history-prev')
       'lazy-motion:set-cursor-word': -> emitCommand('set-cursor-word')
+
+    @subscriptions.add atom.workspace.onDidChangeActivePaneItem =>
+      @cancel() if @isVisible()
 
     @editor.onDidChange =>
       return if @finishing
@@ -65,6 +71,10 @@ class UI extends HTMLElement
 
   focus: ->
     @panel.show()
+    console.log @panel.isVisible()
+    console.log @panel
+    console.log 'FOCUSING'
+    console.log this
     @editorElement.focus()
     @updateCounter('0')
 

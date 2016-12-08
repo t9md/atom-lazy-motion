@@ -1,7 +1,7 @@
 _ = require 'underscore-plus'
 fuzzaldrin = require 'fuzzaldrin'
 {CompositeDisposable} = require 'atom'
-{selectVisibleBy, getIndex, flash, getView} = require './utils'
+{selectVisibleBy, getIndex, flash} = require './utils'
 
 class MatchList
   tokens: null
@@ -9,11 +9,12 @@ class MatchList
   index: -1
 
   constructor: (@editor, @pattern) ->
+    console.log 'pattern', @pattern
     @entries = []
     @subscriptions = new CompositeDisposable
-    editorElement = getView(@editor)
-    @subscribe editorElement.onDidChangeScrollTop => @refresh()
-    @subscribe editorElement.onDidChangeScrollLeft => @refresh()
+    refresh = @refresh.bind(this)
+    @subscribe(@editor.element.onDidChangeScrollTop(refresh))
+    @subscribe(@editor.element.onDidChangeScrollLeft(refresh))
 
   subscribe: (args...) ->
     @subscriptions.add args...
