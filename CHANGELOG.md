@@ -1,3 +1,6 @@
+## 0.5.1
+- Fix: Most of command in ui-input did not worked in v0.5.0.
+
 ## 0.5.0
 - Fix: for Atom-beta. Bump engine to "^1.13.0-beta1"
 

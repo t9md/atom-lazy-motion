@@ -41,11 +41,11 @@ class UI extends HTMLElement
     @subscriptions.add atom.commands.add @editorElement,
       'core:confirm': => @confirm()
       'core:cancel':  => @cancel()
-      'core:move-down': => emitCommand('set-history-next')
-      'core:move-up': => emitCommand('set-history-prev')
-      'lazy-motion:set-history-next': => emitCommand('set-history-next')
-      'lazy-motion:set-history-prev': => emitCommand('set-history-prev')
-      'lazy-motion:set-cursor-word': => emitCommand('set-cursor-word')
+      'core:move-down': => @emitCommand('set-history-next')
+      'core:move-up': => @emitCommand('set-history-prev')
+      'lazy-motion:set-history-next': => @emitCommand('set-history-next')
+      'lazy-motion:set-history-prev': => @emitCommand('set-history-prev')
+      'lazy-motion:set-cursor-word': => @emitCommand('set-cursor-word')
 
     @subscriptions.add atom.workspace.onDidChangeActivePaneItem =>
       @cancel() if @isVisible()
