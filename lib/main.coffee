@@ -19,12 +19,12 @@ module.exports =
 
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-text-editor',
-      'lazy-motion:forward': => @start 'next'
-      'lazy-motion:backward': => @start 'prev'
-      'lazy-motion:forward-again': => @start 'next', action: 'again'
-      'lazy-motion:backward-again': => @start 'prev', action: 'again'
-      'lazy-motion:forward-cursor-word': => @start 'next', action: 'cursorWord'
-      'lazy-motion:backward-cursor-word': => @start 'prev', action: 'cursorWord'
+      'lazy-motion:forward': => @start('next')
+      'lazy-motion:backward': => @start('prev')
+      'lazy-motion:forward-again': => @start('next', action: 'again')
+      'lazy-motion:backward-again': => @start('prev', action: 'again')
+      'lazy-motion:forward-cursor-word': => @start('next', action: 'cursorWord')
+      'lazy-motion:backward-cursor-word': => @start('prev', action: 'cursorWord')
 
   observeUI: ->
     @ui.onDidChange ({text}) =>
@@ -88,6 +88,7 @@ module.exports =
 
   search: (text) ->
     @matchList.reset()
+    return unless text
     @matchList.filter(text)
     if @matchList.isEmpty()
       flashScreen @editor, {timeout: 100, class: 'lazy-motion-flash'}

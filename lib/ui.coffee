@@ -37,20 +37,15 @@ class UI extends HTMLElement
     @emitter.emit('command', command)
 
   initialize: (@main) ->
-    emitCommand = @emitCommand.bind(this)
-
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add @editorElement,
       'core:confirm': => @confirm()
       'core:cancel':  => @cancel()
-      # 'click': => @cancel()
-      # 'blur': => @cancel() if @isVisible()
-
-      'core:move-down': -> emitCommand('set-history-next')
-      'core:move-up': -> emitCommand('set-history-prev')
-      'lazy-motion:set-history-next': -> emitCommand('set-history-next')
-      'lazy-motion:set-history-prev': -> emitCommand('set-history-prev')
-      'lazy-motion:set-cursor-word': -> emitCommand('set-cursor-word')
+      'core:move-down': => emitCommand('set-history-next')
+      'core:move-up': => emitCommand('set-history-prev')
+      'lazy-motion:set-history-next': => emitCommand('set-history-next')
+      'lazy-motion:set-history-prev': => emitCommand('set-history-prev')
+      'lazy-motion:set-cursor-word': => emitCommand('set-cursor-word')
 
     @subscriptions.add atom.workspace.onDidChangeActivePaneItem =>
       @cancel() if @isVisible()
@@ -71,10 +66,6 @@ class UI extends HTMLElement
 
   focus: ->
     @panel.show()
-    console.log @panel.isVisible()
-    console.log @panel
-    console.log 'FOCUSING'
-    console.log this
     @editorElement.focus()
     @updateCounter('0')
 

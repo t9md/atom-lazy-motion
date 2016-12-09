@@ -1,12 +1,9 @@
 {Range} = require 'atom'
 _ = require 'underscore-plus'
 
-getView = (model) ->
-  atom.views.getView(model)
-
 # Return function to restore editor's scrollTop and fold state.
 saveEditorState = (editor) ->
-  editorElement = getView(editor)
+  editorElement = editor.element
   scrollTop = editorElement.getScrollTop()
 
   # [TODO] REMOVE-on=displayLayer-is-out
@@ -34,7 +31,7 @@ getVisibleBufferRange = (editor) ->
   new Range([startRow, 0], [endRow, Infinity])
 
 getVisibleBufferRowRange = (editor) ->
-  [startRow, endRow] = getView(editor).getVisibleRowRange().map (row) ->
+  [startRow, endRow] = editor.element.getVisibleRowRange().map (row) ->
     editor.bufferRowForScreenRow row
 
 # NOTE: depending on getVisibleRowRange
@@ -106,7 +103,6 @@ module.exports = {
   getVisibleBufferRange
   getVisibleBufferRowRange
   getIndex
-  getView
   selectVisibleBy
   getHistoryManager
   flash

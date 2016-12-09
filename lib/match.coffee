@@ -9,7 +9,6 @@ class MatchList
   index: -1
 
   constructor: (@editor, @pattern) ->
-    console.log 'pattern', @pattern
     @entries = []
     @subscriptions = new CompositeDisposable
     refresh = @refresh.bind(this)
@@ -50,9 +49,6 @@ class MatchList
       break
     @setIndex(index)
 
-    [first, others..., last] = @entries
-    first.first = true
-    last?.last = true
     @refresh()
 
   visit: (direction) ->
@@ -82,15 +78,18 @@ class MatchList
     selectVisibleBy @editor, @entries, (match) -> match.range
 
   setIndex: (index) ->
+    @entries[@index]?.current = false
     @index = getIndex(index, @entries)
+    @entries[@index]?.current = true
+    [first, others..., last] = @entries
+    first.first = true
+    last?.last = true
 
   get: (direction=null) ->
-    @entries[@index].current = false
     switch direction
       when 'next' then @setIndex(@index + 1)
       when 'prev' then @setIndex(@index - 1)
     match = @entries[@index]
-    match.current = true
     match
 
   getInfo: ->
