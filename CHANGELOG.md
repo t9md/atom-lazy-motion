@@ -1,3 +1,6 @@
+## 0.5.0
+- Fix: for Atom-beta. Bump engine to "^1.13.0-beta1"
+
 ## 0.4.0
 - Fix: use displayLayer introduced in Atom 1.9.0
 
