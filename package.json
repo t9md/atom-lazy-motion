@@ -7,7 +7,7 @@
   "repository": "https://github.com/t9md/atom-lazy-motion",
   "license": "MIT",
   "engines": {
-    "atom": "^1.13.0-beta1"
+    "atom": "^1.13.0"
   },
   "activationCommands": {
     "atom-text-editor": [

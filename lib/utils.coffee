@@ -1,14 +1,12 @@
 {Range} = require 'atom'
 _ = require 'underscore-plus'
 
-# Return function to restore editor's scrollTop and fold state.
+
 saveEditorState = (editor) ->
   editorElement = editor.element
   scrollTop = editorElement.getScrollTop()
 
-  # [TODO] REMOVE-on=displayLayer-is-out
-  foldFinder = editor.displayLayer ? editor.displayBuffer
-  foldStartRows = foldFinder.findFoldMarkers({}).map (m) -> m.getStartPosition().row
+  foldStartRows = editor.displayLayer.foldsMarkerLayer.findMarkers({}).map (m) -> m.getStartPosition().row
   ->
     for row in foldStartRows.reverse() when not editor.isFoldedAtBufferRow(row)
       editor.foldBufferRow(row)

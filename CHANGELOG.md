@@ -1,3 +1,6 @@
+## 0.5.2
+- Fix: Make it work in Atom-1.14.0-beta1. #15
+
 ## 0.5.1
 - Fix: Most of command in ui-input did not worked in v0.5.0.
 
