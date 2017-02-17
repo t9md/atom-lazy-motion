@@ -1,3 +1,6 @@
+## 0.6.0 Deprecated
+- Add `[Deprecated]` on package description and README.
+
 ## 0.5.2
 - Fix: Make it work in Atom-1.14.0-beta1. #15
 

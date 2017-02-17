@@ -7,11 +7,25 @@ settings = require './settings'
 {getHistoryManager, saveEditorState, flashScreen} = require './utils'
 UI = require './ui'
 
+showDeprecationWarningOnce = (pkgName) ->
+  param = "#{pkgName}.showDeprecationWarning"
+  if atom.config.get(param)
+    atom.config.set(param, false)
+    message = """
+    ## Deprecated: `#{pkgName}`
+    - Because I no longer use this package.
+    - Sorry and thank you for using my package.
+    - This warning is not displayed on next activation.
+    """.replace(/_/g, ' ')
+    atom.notifications.addWarning(message, dismissable: true)
+    
 module.exports =
   subscriptions: null
   searchHistory: null
 
   activate: ->
+    showDeprecationWarningOnce('lazy-motion')
+
     @ui = new UI().initialize(this)
     @searchHistory = getHistoryManager(max: settings.get('historySize'))
     settings.notifyAndRemoveDeprecate('autoLand', 'minimumInputLength')
